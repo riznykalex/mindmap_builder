@@ -102,6 +102,10 @@
     font-family: 'Syne', sans-serif;
     resize: none; overflow: hidden; min-height: 18px;
     cursor: text; display: block; width: 100%;
+	overflow-x: hidden;
+	text-align: center; 
+	width: 100%;
+	overflow-wrap: break-word;
   }
 
   /* connect dot */
@@ -164,7 +168,7 @@
 
   /* Two rows: bg-color + text-color pickers, then new-color input */
   .pal-section { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
-  .pal-section-label { font-size: 10px; color: var(--text-muted); font-family: 'Martian Mono', monospace; white-space: nowrap; }
+  .pal-section-label { font-size: 10px; color: var(--text-muted); font-family: 'Martian Mono', monospace; white-space: pre; }
   .mini-pick { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; background: none; padding: 2px; }
 
   .new-color-row {
@@ -280,6 +284,7 @@ const chex     = document.getElementById('new-color-hex');
 const ctxMenu  = document.getElementById('ctx-menu');
 const qNodeCol = document.getElementById('quick-node-color');
 const qTextCol = document.getElementById('quick-text-color');
+const MAX_NODE_WIDTH = 300; // можеш підібрати
 
 // ─── HELPERS ──────────────────────────────────────────
 function rgb(hex){
@@ -400,7 +405,28 @@ function styleNode(el,n){
   if(ta) ta.style.color=n.textColor||'#ffffff';
 }
 
-function grow(ta){ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; }
+function grow(ta){
+  // HEIGHT reset
+  ta.style.height = 'auto';
+
+  // WIDTH reset
+  ta.style.width = 'auto';
+
+  const fullWidth = ta.scrollWidth;
+
+  if (fullWidth <= MAX_NODE_WIDTH) {
+    //режим: один рядок
+    ta.style.whiteSpace = 'pre';
+    ta.style.width = fullWidth + 2 + 'px';
+  } else {
+    //режим: багаторядковий
+    ta.style.whiteSpace = 'pre-wrap';
+    ta.style.width = MAX_NODE_WIDTH + 'px';
+  }
+
+  // після цього рахуємо висоту
+  ta.style.height = ta.scrollHeight + 'px';
+}
 
 function addChild(pid){
   const p=S.nodes[pid];
