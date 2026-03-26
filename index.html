@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mind Map</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Martian+Mono:wght@300;400;600&family=Syne:wght@400;600;800&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f0f13;
+    --surface: #1a1a22;
+    --surface2: #22222e;
+    --border: #2e2e3e;
+    --text: #e8e8f0;
+    --text-muted: #7070a0;
+    --accent: #7c6af7;
+    --accent2: #f76a8c;
+  }
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+  }
+
+  /* ── TOOLBAR ── */
+  #toolbar {
+    height: 52px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0 12px;
+    flex-shrink: 0;
+    z-index: 100;
+  }
+  .logo { font-weight: 800; font-size: 15px; letter-spacing:.04em; color: var(--accent); margin-right: 6px; }
+  .sep { width: 1px; height: 26px; background: var(--border); margin: 0 3px; }
+  .btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 7px;
+    padding: 5px 11px;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+    transition: background .15s, border-color .15s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--border); border-color: var(--accent); }
+  .btn.danger:hover { border-color: var(--accent2); color: var(--accent2); }
+  #hint { margin-left: auto; font-size: 10px; color: var(--text-muted); font-family: 'Martian Mono', monospace; }
+
+  .tb-pick-wrap { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); font-family: 'Martian Mono', monospace; }
+  .tb-pick { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; background: none; padding: 2px; }
+
+  /* ── CANVAS ── */
+  #canvas-wrap {
+    flex: 1; position: relative; overflow: hidden; cursor: default;
+    background: var(--bg);
+  }
+  #canvas-wrap.panning { cursor: grabbing; }
+
+  /* edges SVG — z-index 1 = below world (nodes) */
+  svg#edges {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    overflow: visible;
+    z-index: 1;
+  }
+
+  /* world = nodes layer on top of edges */
+  #world { position: absolute; top: 0; left: 0; transform-origin: 0 0; z-index: 2; }
+
+  /* ── NODE ── */
+  .node {
+    position: absolute;
+    min-width: 90px; max-width: 200px;
+    border-radius: 10px;
+    padding: 9px 14px;
+    cursor: grab;
+    border: 2px solid transparent;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .node:active { cursor: grabbing; }
+  .node.sel { border-color: #fff !important; box-shadow: 0 0 0 3px rgba(255,255,255,.15); }
+
+  .node-text {
+    font-size: 12px; font-weight: 600; line-height: 1.4;
+    word-break: break-word; outline: none;
+    background: transparent; border: none;
+    font-family: 'Syne', sans-serif;
+    resize: none; overflow: hidden; min-height: 18px;
+    cursor: text; display: block; width: 100%;
+  }
+
+  /* connect dot */
+  .node-dot {
+    position: absolute; right: -7px; top: 50%;
+    transform: translateY(-50%);
+    width: 12px; height: 12px; border-radius: 50%;
+    cursor: crosshair; opacity: 0;
+    transition: opacity .15s; z-index: 10;
+    border: 2px solid rgba(0,0,0,.35);
+  }
+  .node:hover .node-dot { opacity: 1; }
+
+  /* +/− buttons */
+  .node-actions {
+    position: absolute; right: -48px; top: 50%;
+    transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 3px;
+    opacity: 0; transition: opacity .15s; z-index: 20;
+  }
+  .node:hover .node-actions { opacity: 1; }
+  .node-btn {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text-muted); font-size: 15px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background .12s, color .12s; line-height: 1;
+  }
+  .node-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .node-btn.minus:hover { background: var(--accent2); border-color: var(--accent2); }
+
+  /* ── PALETTE PANEL ── */
+  #palette-panel {
+    position: fixed; bottom: 16px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 12px 16px; z-index: 300;
+    box-shadow: 0 8px 32px rgba(0,0,0,.6);
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+    min-width: 360px; max-width: 520px;
+  }
+  #palette-panel.show { opacity: 1; pointer-events: all; }
+
+  .pal-title { font-size: 10px; color: var(--text-muted); font-family: 'Martian Mono', monospace; margin-bottom: 8px; }
+  #swatches { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+
+  .swatch {
+    width: 24px; height: 24px; border-radius: 6px; cursor: pointer;
+    border: 2px solid transparent; transition: transform .12s; flex-shrink: 0; position: relative;
+  }
+  .swatch:hover { transform: scale(1.18); }
+  .swatch.active { border-color: #fff; }
+  .swatch-x {
+    display: none; position: absolute; top: -5px; right: -5px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--accent2); color: #fff;
+    font-size: 9px; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .swatch:hover .swatch-x { display: flex; }
+
+  /* Two rows: bg-color + text-color pickers, then new-color input */
+  .pal-section { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .pal-section-label { font-size: 10px; color: var(--text-muted); font-family: 'Martian Mono', monospace; white-space: nowrap; }
+  .mini-pick { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; background: none; padding: 2px; }
+
+  .new-color-row {
+    display: flex; align-items: center; gap: 7px;
+    border-top: 1px solid var(--border); padding-top: 9px;
+  }
+  #new-color-picker { width: 32px; height: 32px; border-radius: 7px; border: 1px solid var(--border); cursor: pointer; background: none; padding: 2px; flex-shrink: 0; }
+  #new-color-hex { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 5px 8px; font-family: 'Martian Mono', monospace; font-size: 12px; width: 90px; }
+  .pal-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Syne', sans-serif; white-space: nowrap; }
+  .pal-btn:hover { background: var(--border); }
+  .pal-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pal-btn.primary:hover { filter: brightness(1.15); }
+
+  /* ── ZOOM ── */
+  #zoom-info { position: fixed; bottom: 16px; right: 16px; font-family: 'Martian Mono', monospace; font-size: 11px; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; z-index: 200; }
+
+  /* ── CTX MENU ── */
+  #ctx-menu { position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 5px; z-index: 500; display: none; min-width: 155px; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+  #ctx-menu .mi { padding: 7px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+  #ctx-menu .mi:hover { background: var(--surface2); }
+  #ctx-menu .mi.danger { color: var(--accent2); }
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <span class="logo">◈ MindMap</span>
+  <div class="sep"></div>
+  <button class="btn" id="btn-add">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.4"/><path d="M6 3.5v5M3.5 6h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+    Вузол
+  </button>
+  <button class="btn" id="btn-del">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 3h8M5 3V2h2v1M4.5 5.5v3M7.5 5.5v3M2.5 3l.6 6.5h5.8L9.5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Видалити
+  </button>
+  <div class="sep"></div>
+  <button class="btn" id="btn-palette">🎨 Колір</button>
+  <div class="sep"></div>
+  <div class="tb-pick-wrap">
+    <span>Фон:</span>
+    <input type="color" class="tb-pick" id="bg-color-input" value="#0f0f13" title="Колір фону">
+  </div>
+  <div class="sep"></div>
+  <button class="btn" id="btn-save">💾 Зберегти</button>
+  <button class="btn" id="btn-load">📂 Завантажити</button>
+  <button class="btn" id="btn-export">⬇ PNG</button>
+  <button class="btn danger" id="btn-clear">🗑 Очистити</button>
+  <span id="hint">2×клік = вузол · ● = з'єднати · Scroll = zoom · Пробіл+drag = pan · Del = видалити</span>
+</div>
+
+<div id="canvas-wrap">
+  <svg id="edges"></svg>
+  <div id="world"></div>
+  <svg id="tmp-svg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:60">
+    <line id="tmp-line" x1="0" y1="0" x2="0" y2="0"
+      stroke="#f76a8c" stroke-width="2" stroke-dasharray="6 3" stroke-linecap="round" style="display:none"/>
+  </svg>
+</div>
+
+<!-- PALETTE -->
+<div id="palette-panel">
+  <div class="pal-title">Кольори вузла</div>
+  <div id="swatches"></div>
+
+  <!-- Node color + text color quick pickers -->
+  <div class="pal-section">
+    <span class="pal-section-label">Колір вузла:</span>
+    <input type="color" class="mini-pick" id="quick-node-color" value="#7c6af7" title="Колір вузла">
+    <span class="pal-section-label" style="margin-left:8px">Колір тексту:</span>
+    <input type="color" class="mini-pick" id="quick-text-color" value="#ffffff" title="Колір тексту">
+    <button class="pal-btn primary" id="btn-apply-quick" style="margin-left:4px">Застосувати</button>
+  </div>
+
+  <div class="new-color-row">
+    <input type="color" id="new-color-picker" value="#7c6af7">
+    <input type="text" id="new-color-hex" value="#7c6af7" maxlength="7" placeholder="#rrggbb">
+    <button class="pal-btn" id="btn-add-swatch">+ До палітри</button>
+  </div>
+</div>
+
+<!-- CTX MENU -->
+<div id="ctx-menu">
+  <div class="mi" id="cm-child">➕ Дочірній вузол</div>
+  <div class="mi" id="cm-color">🎨 Колір</div>
+  <div class="mi danger" id="cm-del">🗑 Видалити</div>
+</div>
+
+<div id="zoom-info">100%</div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────
+const S = {
+  nodes: {},      // id → {id,x,y,text,color,textColor,w,h}
+  edges: [],      // {id,from,to}
+  sel: null,
+  selType: null,
+  tr: { x:0, y:0, s:1 },
+  palette: ['#7c6af7','#f76a8c','#4ec9b0','#f5a623','#61dafb','#a8e063','#ff6b6b','#ffd93d','#c678dd'],
+  bg: '#0f0f13',
+};
+let nid=0, eid=0;
+
+const world    = document.getElementById('world');
+const edgesSvg = document.getElementById('edges');
+const canvas   = document.getElementById('canvas-wrap');
+const tmpLine  = document.getElementById('tmp-line');
+const zInfo    = document.getElementById('zoom-info');
+const palPanel = document.getElementById('palette-panel');
+const swDiv    = document.getElementById('swatches');
+const cpick    = document.getElementById('new-color-picker');
+const chex     = document.getElementById('new-color-hex');
+const ctxMenu  = document.getElementById('ctx-menu');
+const qNodeCol = document.getElementById('quick-node-color');
+const qTextCol = document.getElementById('quick-text-color');
+
+// ─── HELPERS ──────────────────────────────────────────
+function rgb(hex){
+  return { r:parseInt(hex.slice(1,3),16), g:parseInt(hex.slice(3,5),16), b:parseInt(hex.slice(5,7),16) };
+}
+function hexOk(h){ return /^#[0-9a-fA-F]{6}$/.test(h); }
+function isText(){ const t=document.activeElement?.tagName; return t==='TEXTAREA'||t==='INPUT'; }
+
+// Lighten a hex color by pct (0–1)
+function lighten(hex, pct){
+  let {r,g,b}=rgb(hex);
+  r=Math.min(255, Math.round(r+(255-r)*pct));
+  g=Math.min(255, Math.round(g+(255-g)*pct));
+  b=Math.min(255, Math.round(b+(255-b)*pct));
+  return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+
+// ─── TRANSFORM ────────────────────────────────────────
+function applyTr(){
+  world.style.transform=`translate(${S.tr.x}px,${S.tr.y}px) scale(${S.tr.s})`;
+  drawEdges();
+  zInfo.textContent=Math.round(S.tr.s*100)+'%';
+}
+function w2s(wx,wy){
+  const r=canvas.getBoundingClientRect();
+  return { x:wx*S.tr.s+S.tr.x+r.left, y:wy*S.tr.s+S.tr.y+r.top };
+}
+function s2w(cx,cy){
+  const r=canvas.getBoundingClientRect();
+  return { x:(cx-r.left-S.tr.x)/S.tr.s, y:(cy-r.top-S.tr.y)/S.tr.s };
+}
+
+// ─── PAN / ZOOM ───────────────────────────────────────
+let panning=false, panSt=null, space=false;
+window.addEventListener('keydown', e=>{
+  if(e.code==='Space'&&!isText()){space=true;e.preventDefault();}
+  if(e.key==='Delete'&&!isText()) delSel();
+});
+window.addEventListener('keyup', e=>{ if(e.code==='Space'){space=false;canvas.classList.remove('panning');} });
+canvas.addEventListener('mousedown', e=>{
+  if(e.button===1||space){ panning=true; panSt={x:e.clientX-S.tr.x,y:e.clientY-S.tr.y}; canvas.classList.add('panning'); e.preventDefault(); }
+});
+window.addEventListener('mousemove', e=>{ if(!panning)return; S.tr.x=e.clientX-panSt.x; S.tr.y=e.clientY-panSt.y; applyTr(); });
+window.addEventListener('mouseup', ()=>{ panning=false; canvas.classList.remove('panning'); });
+canvas.addEventListener('wheel', e=>{
+  e.preventDefault();
+  const f=e.deltaY<0?1.1:0.9;
+  const r=canvas.getBoundingClientRect();
+  const mx=e.clientX-r.left, my=e.clientY-r.top;
+  S.tr.x=mx-(mx-S.tr.x)*f; S.tr.y=my-(my-S.tr.y)*f;
+  S.tr.s=Math.max(0.1,Math.min(5,S.tr.s*f));
+  applyTr();
+},{passive:false});
+
+// ─── BG COLOR ─────────────────────────────────────────
+document.getElementById('bg-color-input').addEventListener('input', e=>{
+  S.bg=e.target.value; canvas.style.background=S.bg;
+});
+
+// ─── NODE ─────────────────────────────────────────────
+function mkNode(wx,wy,text='Вузол',color='#7c6af7',parentId=null,textColor='#ffffff'){
+  const id='n'+(++nid);
+  const n={id,x:wx,y:wy,text,color,textColor,w:110,h:38};
+  S.nodes[id]=n;
+  buildEl(n);
+  if(parentId) mkEdge(parentId,id);
+  pickNode(id);
+  requestAnimationFrame(()=>{
+    const el=document.getElementById(id);
+    n.w=el.offsetWidth; n.h=el.offsetHeight;
+    drawEdges();
+    const ta=el.querySelector('.node-text');
+    ta.focus(); ta.select();
+  });
+  return id;
+}
+
+function buildEl(n){
+  const el=document.createElement('div');
+  el.className='node'; el.id=n.id;
+  styleNode(el,n);
+
+  const ta=document.createElement('textarea');
+  ta.className='node-text'; ta.value=n.text; ta.rows=1; ta.spellcheck=false;
+  ta.style.color=n.textColor||'#ffffff';
+  ta.addEventListener('input',()=>{ n.text=ta.value; grow(ta); n.w=el.offsetWidth; n.h=el.offsetHeight; drawEdges(); });
+  ta.addEventListener('mousedown',e=>e.stopPropagation());
+  ta.addEventListener('focus',()=>pickNode(n.id));
+
+  const dot=document.createElement('div');
+  dot.className='node-dot'; dot.style.background=n.color;
+  dot.addEventListener('mousedown',e=>{ e.stopPropagation(); beginConnect(n.id,e); });
+
+  const acts=document.createElement('div'); acts.className='node-actions';
+  const plus=document.createElement('div'); plus.className='node-btn'; plus.title='Дочірній вузол'; plus.textContent='+';
+  plus.addEventListener('mousedown',e=>{ e.stopPropagation(); addChild(n.id); });
+  const minus=document.createElement('div'); minus.className='node-btn minus'; minus.title='Видалити'; minus.textContent='−';
+  minus.addEventListener('mousedown',e=>{ e.stopPropagation(); pickNode(n.id); delSel(); });
+  acts.appendChild(plus); acts.appendChild(minus);
+
+  el.appendChild(ta); el.appendChild(dot); el.appendChild(acts);
+  world.appendChild(el);
+
+  draggable(el,n.id);
+  el.addEventListener('mousedown',e=>{ if(e.button===0) pickNode(n.id); });
+  el.addEventListener('contextmenu',e=>{ e.preventDefault(); pickNode(n.id); showCtx(e.clientX,e.clientY,n.id); });
+
+  requestAnimationFrame(()=>{ n.w=el.offsetWidth; n.h=el.offsetHeight; drawEdges(); });
+}
+
+function styleNode(el,n){
+  el.style.left=n.x+'px'; el.style.top=n.y+'px';
+  const light=lighten(n.color,0.30);
+  el.style.background=`linear-gradient(135deg, ${n.color} 0%, ${light} 100%)`;
+  el.style.borderColor=n.color;
+  // update textarea color if already built
+  const ta=el.querySelector('.node-text');
+  if(ta) ta.style.color=n.textColor||'#ffffff';
+}
+
+function grow(ta){ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; }
+
+function addChild(pid){
+  const p=S.nodes[pid];
+  mkNode(p.x+200, p.y+(Math.random()*70-35), 'Вузол', p.color, pid, p.textColor);
+}
+
+function setNodeAppearance(id,color,textColor){
+  const n=S.nodes[id]; if(!n)return;
+  if(color)     n.color=color;
+  if(textColor) n.textColor=textColor;
+  const el=document.getElementById(id);
+  styleNode(el,n);
+  el.querySelector('.node-dot').style.background=n.color;
+  drawEdges();
+}
+
+function draggable(el,id){
+  let drag=false,ox,oy;
+  el.addEventListener('mousedown',e=>{
+    if(e.button!==0||e.target.tagName==='TEXTAREA')return;
+    drag=true;
+    const n=S.nodes[id], r=canvas.getBoundingClientRect();
+    ox=(e.clientX-r.left-S.tr.x)/S.tr.s-n.x;
+    oy=(e.clientY-r.top -S.tr.y)/S.tr.s-n.y;
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove',e=>{
+    if(!drag)return;
+    const n=S.nodes[id], r=canvas.getBoundingClientRect();
+    n.x=(e.clientX-r.left-S.tr.x)/S.tr.s-ox;
+    n.y=(e.clientY-r.top -S.tr.y)/S.tr.s-oy;
+    el.style.left=n.x+'px'; el.style.top=n.y+'px';
+    drawEdges();
+  });
+  window.addEventListener('mouseup',()=>{ drag=false; });
+}
+
+// ─── SELECT ───────────────────────────────────────────
+function pickNode(id){
+  clearSel(); S.sel=id; S.selType='node';
+  document.getElementById(id)?.classList.add('sel');
+  showPal();
+}
+function clearSel(){
+  if(S.sel){ document.getElementById(S.sel)?.classList.remove('sel'); edgesSvg.querySelectorAll('.esel').forEach(e=>e.classList.remove('esel')); }
+  S.sel=null; S.selType=null;
+}
+canvas.addEventListener('mousedown', e=>{
+  if(e.target===canvas||e.target===edgesSvg||e.target.tagName==='svg'){ clearSel(); hidePal(); hideCtx(); }
+});
+canvas.addEventListener('dblclick', e=>{
+  if(e.target.closest('.node')) return;
+  const wp=s2w(e.clientX,e.clientY);
+  mkNode(wp.x-55,wp.y-19);
+});
+
+// ─── EDGES — GREY TRIANGLES BEHIND NODES ──────────────
+function mkEdge(from,to){
+  if(S.edges.find(e=>(e.from===from&&e.to===to)||(e.from===to&&e.to===from))) return;
+  S.edges.push({id:'e'+(++eid),from,to});
+  drawEdges();
+}
+
+// Triangle base width (in world units) — fixed, not dependent on scale
+const TRI_BASE_W = 10; // half-width of base = 5px world-units
+
+function drawEdges(){
+  edgesSvg.innerHTML='';
+  const cr=canvas.getBoundingClientRect();
+
+  for(const edge of S.edges){
+    const a=S.nodes[edge.from], b=S.nodes[edge.to];
+    if(!a||!b) continue;
+
+    // Centers in world coords
+    const acx=a.x+a.w/2, acy=a.y+a.h/2;
+    const bcx=b.x+b.w/2, bcy=b.y+b.h/2;
+
+    // Direction vector from parent(a) center to child(b) center
+    const dx=bcx-acx, dy=bcy-acy;
+    const len=Math.sqrt(dx*dx+dy*dy)||1;
+    const ux=dx/len, uy=dy/len;   // unit vector toward child
+    const px=-uy, py=ux;           // perpendicular
+
+    // Triangle base: two points near parent center (not on border)
+    // Offset inward by half the base half-width so they sit close to center
+    const baseOff = TRI_BASE_W / 2;   // half-width
+    const b1x = acx + px*baseOff,  b1y = acy + py*baseOff;
+    const b2x = acx - px*baseOff,  b2y = acy - py*baseOff;
+
+    // Triangle tip: attachment point on child node border
+    // (the tip should touch/slightly overlap the child node edge)
+    const tipX = bcx - ux * (b.w/2 + 2);
+    const tipY = bcy - uy * (b.h/2 + 2);
+    // Clamp tip to actual elliptical border of child node
+    const tipAttach = attachEllipse(b, acx, acy);
+
+    // Convert to screen coords
+    function sc(wx,wy){ const s=w2s(wx,wy); return { x:s.x-cr.left, y:s.y-cr.top }; }
+    const sb1=sc(b1x,b1y), sb2=sc(b2x,b2y), sti=sc(tipAttach.x,tipAttach.y);
+
+    const d=`M${sb1.x},${sb1.y} L${sti.x},${sti.y} L${sb2.x},${sb2.y} Z`;
+
+    // Grey fill, no stroke — service element behind nodes
+    const tri=document.createElementNS('http://www.w3.org/2000/svg','path');
+    tri.setAttribute('d', d);
+    tri.setAttribute('fill', 'rgba(140,140,160,0.28)');
+    // No stroke
+    tri.setAttribute('class','edge-tri');
+    edgesSvg.appendChild(tri);
+  }
+}
+
+// Elliptical border intersection from inside center toward (tx,ty)
+function attachEllipse(n, tx, ty){
+  const cx=n.x+n.w/2, cy=n.y+n.h/2;
+  const dx=tx-cx, dy=ty-cy;
+  const len=Math.sqrt(dx*dx+dy*dy)||1;
+  const rx=n.w/2+1, ry=n.h/2+1;
+  const t=1/Math.sqrt((dx/len)*(dx/len)/(rx*rx)+(dy/len)*(dy/len)/(ry*ry));
+  return { x:cx+(dx/len)*t, y:cy+(dy/len)*t };
+}
+
+// ─── CONNECT GESTURE ──────────────────────────────────
+function beginConnect(fromId,e){
+  const cr=canvas.getBoundingClientRect();
+  const n=S.nodes[fromId];
+  const s=w2s(n.x+n.w+2, n.y+n.h/2);
+  tmpLine.setAttribute('x1',s.x-cr.left); tmpLine.setAttribute('y1',s.y-cr.top);
+  tmpLine.setAttribute('x2',e.clientX-cr.left); tmpLine.setAttribute('y2',e.clientY-cr.top);
+  tmpLine.style.display='block';
+  const mm=ev=>{ tmpLine.setAttribute('x2',ev.clientX-cr.left); tmpLine.setAttribute('y2',ev.clientY-cr.top); };
+  const mu=ev=>{
+    tmpLine.style.display='none';
+    window.removeEventListener('mousemove',mm);
+    window.removeEventListener('mouseup',mu);
+    const tgt=ev.target.closest?.('.node');
+    if(tgt&&tgt.id&&tgt.id!==fromId) mkEdge(fromId,tgt.id);
+  };
+  window.addEventListener('mousemove',mm);
+  window.addEventListener('mouseup',mu);
+}
+
+// ─── DELETE ───────────────────────────────────────────
+function delSel(){
+  if(!S.sel) return;
+  if(S.selType==='node'){
+    const id=S.sel;
+    document.getElementById(id)?.remove();
+    delete S.nodes[id];
+    S.edges=S.edges.filter(e=>e.from!==id&&e.to!==id);
+    clearSel(); hidePal(); drawEdges();
+  } else if(S.selType==='edge'){
+    S.edges=S.edges.filter(e=>e.id!==S.sel);
+    clearSel(); drawEdges();
+  }
+}
+document.getElementById('btn-del').addEventListener('click', delSel);
+
+// ─── PALETTE ──────────────────────────────────────────
+function renderSwatches(){
+  swDiv.innerHTML='';
+  const curCol = S.sel&&S.selType==='node' ? S.nodes[S.sel]?.color : null;
+  S.palette.forEach((c,i)=>{
+    const sw=document.createElement('div');
+    sw.className='swatch'; sw.style.background=c; sw.title=c;
+    if(c===curCol) sw.classList.add('active');
+    sw.addEventListener('click',()=>{
+      if(S.sel&&S.selType==='node'){
+        setNodeAppearance(S.sel,c,null);
+        qNodeCol.value=c;
+        renderSwatches();
+      }
+    });
+    const x=document.createElement('span'); x.className='swatch-x'; x.textContent='×';
+    x.addEventListener('click',ev=>{ ev.stopPropagation(); S.palette.splice(i,1); renderSwatches(); });
+    sw.appendChild(x); swDiv.appendChild(sw);
+  });
+}
+
+// Sync new-color picker ↔ hex
+cpick.addEventListener('input',()=>{ chex.value=cpick.value; });
+chex.addEventListener('input',()=>{ if(hexOk(chex.value)) cpick.value=chex.value; });
+
+// Quick pickers sync to selected node
+qNodeCol.addEventListener('input',()=>{
+  if(S.sel&&S.selType==='node') setNodeAppearance(S.sel,qNodeCol.value,null);
+});
+qTextCol.addEventListener('input',()=>{
+  if(S.sel&&S.selType==='node') setNodeAppearance(S.sel,null,qTextCol.value);
+});
+
+document.getElementById('btn-apply-quick').addEventListener('click',()=>{
+  if(S.sel&&S.selType==='node'){
+    setNodeAppearance(S.sel,qNodeCol.value,qTextCol.value);
+    // also update in palette if not there
+    if(!S.palette.includes(qNodeCol.value)) S.palette.push(qNodeCol.value);
+    renderSwatches();
+  } else toast('Виберіть вузол');
+});
+
+document.getElementById('btn-add-swatch').addEventListener('click',()=>{
+  const c=chex.value; if(!hexOk(c)){toast('Невірний формат #rrggbb');return;}
+  if(!S.palette.includes(c)) S.palette.push(c);
+  renderSwatches(); toast('Колір додано ✓');
+});
+
+function showPal(){
+  // sync quick pickers to current node
+  if(S.sel&&S.selType==='node'){
+    const n=S.nodes[S.sel];
+    qNodeCol.value=n.color||'#7c6af7';
+    qTextCol.value=n.textColor||'#ffffff';
+  }
+  renderSwatches();
+  palPanel.classList.add('show');
+}
+function hidePal(){ palPanel.classList.remove('show'); }
+document.getElementById('btn-palette').addEventListener('click',()=>{ if(S.sel&&S.selType==='node') showPal(); else toast('Виберіть вузол'); });
+
+// ─── CTX MENU ─────────────────────────────────────────
+let ctxTgt=null;
+function showCtx(x,y,id){ ctxTgt=id; ctxMenu.style.display='block'; ctxMenu.style.left=x+'px'; ctxMenu.style.top=y+'px'; }
+function hideCtx(){ ctxMenu.style.display='none'; ctxTgt=null; }
+window.addEventListener('click',e=>{ if(!ctxMenu.contains(e.target)) hideCtx(); });
+document.getElementById('cm-child').addEventListener('click',()=>{ if(ctxTgt) addChild(ctxTgt); hideCtx(); });
+document.getElementById('cm-color').addEventListener('click',()=>{ if(ctxTgt){pickNode(ctxTgt);showPal();} hideCtx(); });
+document.getElementById('cm-del').addEventListener('click',()=>{ if(ctxTgt){pickNode(ctxTgt);delSel();} hideCtx(); });
+
+// ─── ADD NODE BTN ─────────────────────────────────────
+document.getElementById('btn-add').addEventListener('click',()=>{
+  const r=canvas.getBoundingClientRect();
+  const wp=s2w(r.left+r.width/2, r.top+r.height/2);
+  mkNode(wp.x-55,wp.y-19);
+});
+
+// ─── SAVE / LOAD ──────────────────────────────────────
+function getData(){
+  return JSON.stringify({
+    nodes: Object.values(S.nodes).map(n=>({id:n.id,x:n.x,y:n.y,text:n.text,color:n.color,textColor:n.textColor||'#ffffff'})),
+    edges: S.edges, palette: S.palette, bg: S.bg, nid
+  });
+}
+document.getElementById('btn-save').addEventListener('click',()=>{ localStorage.setItem('mm4',getData()); toast('Збережено ✓'); });
+document.getElementById('btn-load').addEventListener('click',()=>{
+  const raw=localStorage.getItem('mm4'); if(!raw){toast('Немає збереженої карти');return;}
+  loadMap(JSON.parse(raw)); toast('Завантажено ✓');
+});
+
+function loadMap(data){
+  world.innerHTML=''; edgesSvg.innerHTML='';
+  Object.keys(S.nodes).forEach(k=>delete S.nodes[k]);
+  S.edges.length=0; S.sel=null; S.selType=null;
+  if(data.palette) S.palette=data.palette;
+  if(data.nid) nid=data.nid;
+  if(data.bg){ S.bg=data.bg; canvas.style.background=data.bg; document.getElementById('bg-color-input').value=data.bg; }
+  data.nodes.forEach(n=>{ S.nodes[n.id]={...n,w:110,h:38}; buildEl(S.nodes[n.id]); });
+  S.edges=data.edges||[]; drawEdges();
+}
+
+document.getElementById('btn-clear').addEventListener('click',()=>{
+  if(!confirm('Очистити карту?')) return;
+  world.innerHTML=''; edgesSvg.innerHTML='';
+  Object.keys(S.nodes).forEach(k=>delete S.nodes[k]);
+  S.edges.length=0; S.sel=null; nid=0; hidePal();
+});
+
+// ─── EXPORT PNG ───────────────────────────────────────
+document.getElementById('btn-export').addEventListener('click',()=>{
+  const nodes=Object.values(S.nodes); if(!nodes.length){toast('Немає вузлів');return;}
+  const pad=60;
+  const minX=Math.min(...nodes.map(n=>n.x))-pad, minY=Math.min(...nodes.map(n=>n.y))-pad;
+  const maxX=Math.max(...nodes.map(n=>n.x+n.w))+pad, maxY=Math.max(...nodes.map(n=>n.y+n.h))+pad;
+  const W=maxX-minX, H=maxY-minY;
+
+  // Unique gradient defs
+  let defs='<defs>';
+  nodes.forEach(n=>{
+    const light=lighten(n.color,0.30);
+    defs+=`<linearGradient id="g${n.id}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${n.color}"/><stop offset="100%" stop-color="${light}"/></linearGradient>`;
+  });
+  defs+='</defs>';
+
+  let svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">${defs}<rect width="${W}" height="${H}" fill="${S.bg}"/>`;
+
+  // Triangles first (behind nodes)
+  for(const edge of S.edges){
+    const a=S.nodes[edge.from],b=S.nodes[edge.to]; if(!a||!b) continue;
+    const acx=a.x+a.w/2-minX, acy=a.y+a.h/2-minY;
+    const bcx=b.x+b.w/2-minX, bcy=b.y+b.h/2-minY;
+    const dx=bcx-acx,dy=bcy-acy,len=Math.sqrt(dx*dx+dy*dy)||1;
+    const ux=dx/len,uy=dy/len,px=-uy,py=ux;
+    const hw=TRI_BASE_W/2;
+    const b1x=acx+px*hw,b1y=acy+py*hw;
+    const b2x=acx-px*hw,b2y=acy-py*hw;
+    // tip near child border
+    const col_b=b; const tipA=attachEllipseExport(col_b,a.x+a.w/2,a.y+a.h/2,minX,minY);
+    svg+=`<path d="M${b1x},${b1y} L${tipA.x},${tipA.y} L${b2x},${b2y} Z" fill="rgba(140,140,160,0.28)"/>`;
+  }
+  // Nodes on top
+  for(const n of nodes){
+    const nx=n.x-minX,ny=n.y-minY,w=n.w,h=n.h;
+    const tc=n.textColor||'#ffffff';
+    svg+=`<rect x="${nx}" y="${ny}" width="${w}" height="${h}" rx="10" fill="url(#g${n.id})" stroke="${n.color}" stroke-width="1.5"/>`;
+    n.text.split('\n').forEach((ln,i)=>{
+      svg+=`<text x="${nx+12}" y="${ny+26+i*16}" font-family="sans-serif" font-size="12" font-weight="600" fill="${tc}">${ln.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</text>`;
+    });
+  }
+  svg+='</svg>';
+
+  const blob=new Blob([svg],{type:'image/svg+xml'});
+  const url=URL.createObjectURL(blob);
+  const img=new Image();
+  img.onload=()=>{
+    const c=document.createElement('canvas'); c.width=W*2; c.height=H*2;
+    const ctx=c.getContext('2d'); ctx.scale(2,2); ctx.drawImage(img,0,0);
+    URL.revokeObjectURL(url);
+    c.toBlob(bl=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(bl); a.download='mindmap.png'; a.click(); });
+  };
+  img.src=url; toast('Завантаження PNG...');
+});
+
+function attachEllipseExport(n, fromX, fromY, offX, offY){
+  const cx=n.x+n.w/2-offX, cy=n.y+n.h/2-offY;
+  const dx=(fromX-offX)-cx, dy=(fromY-offY)-cy;
+  const len=Math.sqrt(dx*dx+dy*dy)||1;
+  const rx=n.w/2+1, ry=n.h/2+1;
+  const t=1/Math.sqrt((dx/len)*(dx/len)/(rx*rx)+(dy/len)*(dy/len)/(ry*ry));
+  return { x:cx+(dx/len)*t, y:cy+(dy/len)*t };
+}
+
+// ─── TOAST ────────────────────────────────────────────
+function toast(msg){
+  const t=document.createElement('div'); t.textContent=msg;
+  Object.assign(t.style,{position:'fixed',bottom:'80px',left:'50%',transform:'translateX(-50%)',background:'#22222e',border:'1px solid #2e2e3e',color:'#e8e8f0',padding:'7px 16px',borderRadius:'10px',fontFamily:'Martian Mono,monospace',fontSize:'12px',zIndex:'9999',pointerEvents:'none',transition:'opacity .3s'});
+  document.body.appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(),300); },1800);
+}
+
+// ─── INIT ─────────────────────────────────────────────
+renderSwatches();
+requestAnimationFrame(()=>{
+  const r=canvas.getBoundingClientRect();
+  S.tr={x:r.width/2-55, y:r.height/2-19, s:1};
+  applyTr();
+  mkNode(-55,-19,'Головна ідея','#7c6af7');
+});
+</script>
+</body>
+</html>
