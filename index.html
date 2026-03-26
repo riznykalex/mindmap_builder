@@ -40,7 +40,7 @@
     flex-shrink: 0;
     z-index: 100;
   }
-  .logo { font-weight: 800; font-size: 15px; letter-spacing:.04em; color: var(--accent); margin-right: 6px; }
+  .logo { font-weight: 600; font-size: 12px; letter-spacing:.04em; color: var(--accent); margin-right: 6px; }
   .sep { width: 1px; height: 26px; background: var(--border); margin: 0 3px; }
   .btn {
     background: var(--surface2);
@@ -196,6 +196,7 @@
 
 <div id="toolbar">
   <span class="logo">◈ MindMap</span>
+  <span id="project-name" style="margin-left:10px; font-size:12px; color:#ccc;"></span>
   <div class="sep"></div>
   <button class="btn" id="btn-add">
     <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.4"/><path d="M6 3.5v5M3.5 6h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
@@ -213,11 +214,13 @@
     <input type="color" class="tb-pick" id="bg-color-input" value="#0f0f13" title="Колір фону">
   </div>
   <div class="sep"></div>
-  <button class="btn" id="btn-save">💾 Зберегти</button>
-  <button class="btn" id="btn-load">📂 Завантажити</button>
+  <button class="btn" id="btn-save">💾 Зберегти JSON</button>
+  <button class="btn" id="btn-load">📂 Завантажити JSON</button>
   <button class="btn" id="btn-export">⬇ PNG</button>
+  <button class="btn" id="btn-export-txt">⬇ TXT</button>
   <button class="btn danger" id="btn-clear">🗑 Очистити</button>
   <span id="hint">2×клік = вузол · ● = з'єднати · Scroll = zoom · Пробіл+drag = pan · Del = видалити</span>
+  <input type="file" id="file-input" accept=".json" style="display:none">
 </div>
 
 <div id="canvas-wrap">
@@ -284,7 +287,8 @@ const chex     = document.getElementById('new-color-hex');
 const ctxMenu  = document.getElementById('ctx-menu');
 const qNodeCol = document.getElementById('quick-node-color');
 const qTextCol = document.getElementById('quick-text-color');
-const MAX_NODE_WIDTH = 300; // можеш підібрати
+const fileInput = document.getElementById('file-input');
+const MAX_NODE_WIDTH = 150; // можеш підібрати
 
 // ─── HELPERS ──────────────────────────────────────────
 function rgb(hex){
@@ -664,27 +668,107 @@ document.getElementById('btn-add').addEventListener('click',()=>{
 });
 
 // ─── SAVE / LOAD ──────────────────────────────────────
-function getData(){
+function getData(projectName='mindmap'){
   return JSON.stringify({
-    nodes: Object.values(S.nodes).map(n=>({id:n.id,x:n.x,y:n.y,text:n.text,color:n.color,textColor:n.textColor||'#ffffff'})),
-    edges: S.edges, palette: S.palette, bg: S.bg, nid
+    name: projectName, // 🔥 нове поле
+    nodes: Object.values(S.nodes).map(n=>({
+      id:n.id,x:n.x,y:n.y,text:n.text,color:n.color,textColor:n.textColor||'#ffffff'
+    })),
+    edges: S.edges,
+    palette: S.palette,
+    bg: S.bg,
+    nid
   });
 }
-document.getElementById('btn-save').addEventListener('click',()=>{ localStorage.setItem('mm4',getData()); toast('Збережено ✓'); });
-document.getElementById('btn-load').addEventListener('click',()=>{
-  const raw=localStorage.getItem('mm4'); if(!raw){toast('Немає збереженої карти');return;}
-  loadMap(JSON.parse(raw)); toast('Завантажено ✓');
+
+document.getElementById('btn-save').addEventListener('click',()=>{
+  let name = prompt('Назва проєкту:', 'mindmap');
+
+  if(!name) name = 'mindmap';
+
+  const data = getData(name);
+
+  // файл
+  const blob = new Blob([data], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name + '.json';
+  a.click();
+  setProjectName(name);
+  // backup
+  localStorage.setItem('mm4', data);
+
+  toast('Збережено: ' + name + ' ✓');
 });
 
+
+document.getElementById('btn-load').addEventListener('click',()=>{
+  fileInput.click();
+});
+
+fileInput.addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function(ev){
+    try {
+      const data = JSON.parse(ev.target.result);
+      loadMap(data);
+      toast('JSON завантажено ✓');
+    } catch(err){
+      toast('Помилка JSON ❌');
+    }
+  };
+
+  reader.readAsText(file);
+});
+
+
 function loadMap(data){
-  world.innerHTML=''; edgesSvg.innerHTML='';
+
+if(data.name){
+  setProjectName(data.name);
+  toast('Завантажено: ' + data.name);
+}
+  world.innerHTML='';
+  edgesSvg.innerHTML='';
+
   Object.keys(S.nodes).forEach(k=>delete S.nodes[k]);
-  S.edges.length=0; S.sel=null; S.selType=null;
+  S.edges.length=0;
+  S.sel=null;
+  S.selType=null;
+
   if(data.palette) S.palette=data.palette;
   if(data.nid) nid=data.nid;
-  if(data.bg){ S.bg=data.bg; canvas.style.background=data.bg; document.getElementById('bg-color-input').value=data.bg; }
-  data.nodes.forEach(n=>{ S.nodes[n.id]={...n,w:110,h:38}; buildEl(S.nodes[n.id]); });
-  S.edges=data.edges||[]; drawEdges();
+
+  if(data.bg){
+    S.bg=data.bg;
+    canvas.style.background=data.bg;
+    document.getElementById('bg-color-input').value=data.bg;
+  }
+
+  data.nodes.forEach(n=>{
+    S.nodes[n.id]={...n,w:110,h:38};
+    buildEl(S.nodes[n.id]);
+
+    requestAnimationFrame(()=>{
+      const el = document.getElementById(n.id);
+      const ta = el.querySelector('.node-text');
+
+      grow(ta); // 🔥 виправляє розмір
+
+      S.nodes[n.id].w = el.offsetWidth;
+      S.nodes[n.id].h = el.offsetHeight;
+
+      drawEdges();
+    });
+  });
+
+  S.edges = data.edges || [];
+
+  drawEdges();
 }
 
 document.getElementById('btn-clear').addEventListener('click',()=>{
@@ -693,6 +777,11 @@ document.getElementById('btn-clear').addEventListener('click',()=>{
   Object.keys(S.nodes).forEach(k=>delete S.nodes[k]);
   S.edges.length=0; S.sel=null; nid=0; hidePal();
 });
+
+function setProjectName(name){
+  document.getElementById('project-name').textContent = name;
+}
+
 
 // ─── EXPORT PNG ───────────────────────────────────────
 document.getElementById('btn-export').addEventListener('click',()=>{
@@ -758,6 +847,52 @@ function attachEllipseExport(n, fromX, fromY, offX, offY){
   return { x:cx+(dx/len)*t, y:cy+(dy/len)*t };
 }
 
+function exportTXT(){
+  const nodes = S.nodes;
+  const edges = S.edges;
+
+  const children = {};
+  Object.keys(nodes).forEach(id => children[id] = []);
+
+  edges.forEach(e=>{
+    children[e.from].push(e.to);
+  });
+
+  const hasParent = new Set(edges.map(e=>e.to));
+  const roots = Object.keys(nodes).filter(id => !hasParent.has(id));
+
+  function walk(id, depth=0, visited=new Set()){
+    if (visited.has(id)) {
+      return '  '.repeat(depth) + nodes[id].text + ' (↺)\n';
+    }
+
+    visited.add(id);
+
+    let str = '  '.repeat(depth) + nodes[id].text + '\n';
+
+    for (let ch of children[id]){
+      str += walk(ch, depth+1, new Set(visited));
+    }
+
+    return str;
+  }
+
+  let result = '';
+  roots.forEach(r=>{
+    result += walk(r) + '\n';
+  });
+
+  const blob = new Blob([result], {type: 'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'mindmap.txt';
+  a.click();
+  toast('Експорт TXT ✓');
+}
+
+document.getElementById('btn-export-txt').addEventListener('click', exportTXT);
+
+
 // ─── TOAST ────────────────────────────────────────────
 function toast(msg){
   const t=document.createElement('div'); t.textContent=msg;
@@ -772,6 +907,10 @@ requestAnimationFrame(()=>{
   const r=canvas.getBoundingClientRect();
   S.tr={x:r.width/2-55, y:r.height/2-19, s:1};
   applyTr();
+  const saved = localStorage.getItem('mm4');
+if(saved){
+  loadMap(JSON.parse(saved));
+}  
   mkNode(-55,-19,'Головна ідея','#7c6af7');
 });
 </script>
