@@ -40,7 +40,10 @@
     flex-shrink: 0;
     z-index: 100;
   }
-  .logo { font-weight: 600; font-size: 12px; letter-spacing:.04em; color: var(--accent); margin-right: 6px; }
+  .logo-wrap { display: flex; flex-direction: column; align-items: flex-start; margin-right: 6px; line-height: 1.2; flex-shrink: 0; }
+  .logo { font-weight: 800; font-size: 13px; letter-spacing:.04em; color: var(--accent); }
+  #project-name-tb { font-size: 12px; color: #ffffff; font-family: 'Syne', sans-serif; font-weight: 600; white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+  #project-name-tb:hover { color: var(--accent); }
   .sep { width: 1px; height: 26px; background: var(--border); margin: 0 3px; }
   .btn {
     background: var(--surface2);
@@ -85,12 +88,12 @@
   /* ── NODE ── */
   .node {
     position: absolute;
-    min-width: 90px; max-width: 200px;
     border-radius: 10px;
     padding: 9px 14px;
     cursor: grab;
     border: 2px solid transparent;
     transition: border-color .15s, box-shadow .15s;
+    display: inline-block;
   }
   .node:active { cursor: grabbing; }
   .node.sel { border-color: #fff !important; box-shadow: 0 0 0 3px rgba(255,255,255,.15); }
@@ -101,11 +104,8 @@
     background: transparent; border: none;
     font-family: 'Syne', sans-serif;
     resize: none; overflow: hidden; min-height: 18px;
-    cursor: text; display: block; width: 100%;
-	overflow-x: hidden;
-	text-align: center; 
-	width: 100%;
-	overflow-wrap: break-word;
+    cursor: text; display: block;
+    white-space: pre;
   }
 
   /* connect dot */
@@ -182,8 +182,13 @@
   .pal-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   .pal-btn.primary:hover { filter: brightness(1.15); }
 
+  .align-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); border-radius: 5px; width: 26px; height: 26px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: background .12s; }
+  .align-btn:hover { background: var(--border); color: var(--text); }
+  .align-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
   /* ── ZOOM ── */
   #zoom-info { position: fixed; bottom: 16px; right: 16px; font-family: 'Martian Mono', monospace; font-size: 11px; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; z-index: 200; }
+  #autosave-ind { position: fixed; bottom: 16px; right: 80px; font-family: 'Martian Mono', monospace; font-size: 11px; color: #4ec9b0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; z-index: 200; opacity: 0; transition: opacity .4s; }
 
   /* ── CTX MENU ── */
   #ctx-menu { position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 5px; z-index: 500; display: none; min-width: 155px; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
@@ -195,8 +200,10 @@
 <body>
 
 <div id="toolbar">
-  <span class="logo">◈ MindMap</span>
-  <span id="project-name" style="margin-left:10px; font-size:12px; color:#ccc;"></span>
+  <div class="logo-wrap">
+    <span class="logo">◈ MindMap</span>
+    <span id="project-name-tb" title="Клік — змінити назву проекту">(без назви)</span>
+  </div>
   <div class="sep"></div>
   <button class="btn" id="btn-add">
     <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.4"/><path d="M6 3.5v5M3.5 6h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
@@ -206,8 +213,6 @@
     <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 3h8M5 3V2h2v1M4.5 5.5v3M7.5 5.5v3M2.5 3l.6 6.5h5.8L9.5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     Видалити
   </button>
-  <div class="sep"></div>
-  <button class="btn" id="btn-palette">🎨 Колір</button>
   <div class="sep"></div>
   <div class="tb-pick-wrap">
     <span>Фон:</span>
@@ -239,17 +244,33 @@
 
   <!-- Node color + text color quick pickers -->
   <div class="pal-section">
-    <span class="pal-section-label">Колір вузла:</span>
+    <span class="pal-section-label">Вузол:</span>
     <input type="color" class="mini-pick" id="quick-node-color" value="#7c6af7" title="Колір вузла">
-    <span class="pal-section-label" style="margin-left:8px">Колір тексту:</span>
+    <span class="pal-section-label" style="margin-left:8px">Текст:</span>
     <input type="color" class="mini-pick" id="quick-text-color" value="#ffffff" title="Колір тексту">
-    <button class="pal-btn primary" id="btn-apply-quick" style="margin-left:4px">Застосувати</button>
+    <button class="pal-btn" id="btn-add-swatch" style="margin-left:8px">+ До палітри</button>
   </div>
 
-  <div class="new-color-row">
-    <input type="color" id="new-color-picker" value="#7c6af7">
-    <input type="text" id="new-color-hex" value="#7c6af7" maxlength="7" placeholder="#rrggbb">
-    <button class="pal-btn" id="btn-add-swatch">+ До палітри</button>
+  <!-- Font size + alignment -->
+  <div class="pal-section" style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px;gap:6px">
+    <span class="pal-section-label">Шрифт:</span>
+    <select id="pal-font-size" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 6px;font-family:'Syne',sans-serif;font-size:12px;cursor:pointer">
+      <option value="10">10</option>
+      <option value="11">11</option>
+      <option value="12" selected>12</option>
+      <option value="13">13</option>
+      <option value="14">14</option>
+      <option value="16">16</option>
+      <option value="18">18</option>
+      <option value="20">20</option>
+      <option value="24">24</option>
+    </select>
+    <span class="pal-section-label" style="margin-left:6px">Вирівн.:</span>
+    <div id="pal-align" style="display:flex;gap:3px">
+      <button class="align-btn active" data-align="left" title="Ліво">&#8676;</button>
+      <button class="align-btn" data-align="center" title="По центру">&#8677;</button>
+      <button class="align-btn" data-align="right" title="Право">&#8678;</button>
+    </div>
   </div>
 </div>
 
@@ -260,6 +281,7 @@
   <div class="mi danger" id="cm-del">🗑 Видалити</div>
 </div>
 
+<div id="autosave-ind">✓ автозбережено</div>
 <div id="zoom-info">100%</div>
 
 <script>
@@ -288,7 +310,6 @@ const ctxMenu  = document.getElementById('ctx-menu');
 const qNodeCol = document.getElementById('quick-node-color');
 const qTextCol = document.getElementById('quick-text-color');
 const fileInput = document.getElementById('file-input');
-const MAX_NODE_WIDTH = 150; // можеш підібрати
 
 // ─── HELPERS ──────────────────────────────────────────
 function rgb(hex){
@@ -349,9 +370,9 @@ document.getElementById('bg-color-input').addEventListener('input', e=>{
 });
 
 // ─── NODE ─────────────────────────────────────────────
-function mkNode(wx,wy,text='Вузол',color='#7c6af7',parentId=null,textColor='#ffffff'){
+function mkNode(wx,wy,text='Вузол',color='#7c6af7',parentId=null,textColor='#ffffff',fontSize=12,textAlign='center'){
   const id='n'+(++nid);
-  const n={id,x:wx,y:wy,text,color,textColor,w:110,h:38};
+  const n={id,x:wx,y:wy,text,color,textColor,fontSize,textAlign,w:110,h:38};
   S.nodes[id]=n;
   buildEl(n);
   if(parentId) mkEdge(parentId,id);
@@ -374,6 +395,8 @@ function buildEl(n){
   const ta=document.createElement('textarea');
   ta.className='node-text'; ta.value=n.text; ta.rows=1; ta.spellcheck=false;
   ta.style.color=n.textColor||'#ffffff';
+  ta.style.fontSize=(n.fontSize||12)+'px';
+  ta.style.textAlign=n.textAlign||'center';
   ta.addEventListener('input',()=>{ n.text=ta.value; grow(ta); n.w=el.offsetWidth; n.h=el.offsetHeight; drawEdges(); });
   ta.addEventListener('mousedown',e=>e.stopPropagation());
   ta.addEventListener('focus',()=>pickNode(n.id));
@@ -406,35 +429,53 @@ function styleNode(el,n){
   el.style.borderColor=n.color;
   // update textarea color if already built
   const ta=el.querySelector('.node-text');
-  if(ta) ta.style.color=n.textColor||'#ffffff';
+  if(ta){
+    ta.style.color=n.textColor||'#ffffff';
+    ta.style.fontSize=(n.fontSize||12)+'px';
+    ta.style.textAlign=n.textAlign||'center';
+  }
 }
 
+const MIN_NODE_W = 60;
+const MAX_NODE_W = 220;
+
 function grow(ta){
-  // HEIGHT reset
+  // Reset to minimal to measure natural single-line width
+  ta.style.whiteSpace = 'pre';
+  ta.style.width = 'auto';
   ta.style.height = 'auto';
 
-  // WIDTH reset
-  ta.style.width = 'auto';
+  const naturalW = ta.scrollWidth;
 
-  const fullWidth = ta.scrollWidth;
-
-  if (fullWidth <= MAX_NODE_WIDTH) {
-    //режим: один рядок
+  if(naturalW <= MAX_NODE_W){
+    // fits on one line — keep single line width
+    ta.style.width = Math.max(naturalW, MIN_NODE_W) + 'px';
     ta.style.whiteSpace = 'pre';
-    ta.style.width = fullWidth + 2 + 'px';
   } else {
-    //режим: багаторядковий
+    // wrap at max width
+    ta.style.width = MAX_NODE_W + 'px';
     ta.style.whiteSpace = 'pre-wrap';
-    ta.style.width = MAX_NODE_WIDTH + 'px';
   }
 
-  // після цього рахуємо висоту
+  ta.style.height = 'auto';
   ta.style.height = ta.scrollHeight + 'px';
 }
 
 function addChild(pid){
   const p=S.nodes[pid];
-  mkNode(p.x+200, p.y+(Math.random()*70-35), 'Вузол', p.color, pid, p.textColor);
+  // Count existing children to determine angle
+  const childCount = S.edges.filter(e=>e.from===pid).length;
+  // Counter-clockwise: start at right (0°), step by 60° CCW
+  const RADIUS = 220;
+  const startAngle = 0; // degrees, right side
+  const stepAngle = -18; // CCW
+  const angleDeg = startAngle + childCount * stepAngle;
+  const angleRad = angleDeg * Math.PI / 180;
+  const cx = p.x + (p.w||110)/2;
+  const cy = p.y + (p.h||38)/2;
+  const nx = cx + Math.cos(angleRad) * RADIUS - 55;
+  const ny = cy + Math.sin(angleRad) * RADIUS - 19;
+  mkNode(nx, ny, 'Вузол', p.color, pid, p.textColor, p.fontSize||12, p.textAlign||'center');
 }
 
 function setNodeAppearance(id,color,textColor){
@@ -495,7 +536,7 @@ function mkEdge(from,to){
 }
 
 // Triangle base width (in world units) — fixed, not dependent on scale
-const TRI_BASE_W = 10; // half-width of base = 5px world-units
+const TRI_BASE_W = 20;
 
 function drawEdges(){
   edgesSvg.innerHTML='';
@@ -611,11 +652,33 @@ function renderSwatches(){
   });
 }
 
-// Sync new-color picker ↔ hex
-cpick.addEventListener('input',()=>{ chex.value=cpick.value; });
-chex.addEventListener('input',()=>{ if(hexOk(chex.value)) cpick.value=chex.value; });
+function setNodeTypography(id, fontSize, textAlign){
+  const n=S.nodes[id]; if(!n) return;
+  if(fontSize)  n.fontSize=fontSize;
+  if(textAlign) n.textAlign=textAlign;
+  const el=document.getElementById(id);
+  const ta=el?.querySelector('.node-text');
+  if(ta){
+    if(fontSize)  { ta.style.fontSize=fontSize+'px'; grow(ta); n.w=el.offsetWidth; n.h=el.offsetHeight; drawEdges(); }
+    if(textAlign)   ta.style.textAlign=textAlign;
+  }
+}
 
-// Quick pickers sync to selected node
+// Font size select
+document.getElementById('pal-font-size').addEventListener('change', e=>{
+  if(S.sel&&S.selType==='node') setNodeTypography(S.sel, parseInt(e.target.value), null);
+});
+
+// Alignment buttons
+document.querySelectorAll('.align-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.align-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    if(S.sel&&S.selType==='node') setNodeTypography(S.sel, null, btn.dataset.align);
+  });
+});
+
+// Quick pickers — apply immediately on change
 qNodeCol.addEventListener('input',()=>{
   if(S.sel&&S.selType==='node') setNodeAppearance(S.sel,qNodeCol.value,null);
 });
@@ -623,33 +686,31 @@ qTextCol.addEventListener('input',()=>{
   if(S.sel&&S.selType==='node') setNodeAppearance(S.sel,null,qTextCol.value);
 });
 
-document.getElementById('btn-apply-quick').addEventListener('click',()=>{
-  if(S.sel&&S.selType==='node'){
-    setNodeAppearance(S.sel,qNodeCol.value,qTextCol.value);
-    // also update in palette if not there
-    if(!S.palette.includes(qNodeCol.value)) S.palette.push(qNodeCol.value);
-    renderSwatches();
-  } else toast('Виберіть вузол');
-});
-
+// Add current node color to palette
 document.getElementById('btn-add-swatch').addEventListener('click',()=>{
-  const c=chex.value; if(!hexOk(c)){toast('Невірний формат #rrggbb');return;}
+  const c=qNodeCol.value;
   if(!S.palette.includes(c)) S.palette.push(c);
   renderSwatches(); toast('Колір додано ✓');
 });
 
 function showPal(){
-  // sync quick pickers to current node
   if(S.sel&&S.selType==='node'){
     const n=S.nodes[S.sel];
     qNodeCol.value=n.color||'#7c6af7';
     qTextCol.value=n.textColor||'#ffffff';
+    // sync font size
+    const fs=document.getElementById('pal-font-size');
+    fs.value=n.fontSize||12;
+    // sync alignment
+    const align=n.textAlign||'center';
+    document.querySelectorAll('.align-btn').forEach(b=>{
+      b.classList.toggle('active', b.dataset.align===align);
+    });
   }
   renderSwatches();
   palPanel.classList.add('show');
 }
-function hidePal(){ palPanel.classList.remove('show'); }
-document.getElementById('btn-palette').addEventListener('click',()=>{ if(S.sel&&S.selType==='node') showPal(); else toast('Виберіть вузол'); });
+function hidePal(){ palPanel.classList.remove('show'); };
 
 // ─── CTX MENU ─────────────────────────────────────────
 let ctxTgt=null;
@@ -672,7 +733,8 @@ function getData(projectName='mindmap'){
   return JSON.stringify({
     name: projectName, // 🔥 нове поле
     nodes: Object.values(S.nodes).map(n=>({
-      id:n.id,x:n.x,y:n.y,text:n.text,color:n.color,textColor:n.textColor||'#ffffff'
+      id:n.id,x:n.x,y:n.y,text:n.text,color:n.color,textColor:n.textColor||'#ffffff',
+      fontSize:n.fontSize||12, textAlign:n.textAlign||'center'
     })),
     edges: S.edges,
     palette: S.palette,
@@ -682,9 +744,10 @@ function getData(projectName='mindmap'){
 }
 
 document.getElementById('btn-save').addEventListener('click',()=>{
-  let name = prompt('Назва проєкту:', 'mindmap');
+  let name = prompt('Назва проєкту:', S_projectName || 'mindmap');
 
-  if(!name) name = 'mindmap';
+  if(name === null) return; // скасовано
+  if(!name.trim()) name = S_projectName || 'mindmap';
 
   const data = getData(name);
 
@@ -750,7 +813,7 @@ if(data.name){
   }
 
   data.nodes.forEach(n=>{
-    S.nodes[n.id]={...n,w:110,h:38};
+    S.nodes[n.id]={...n, w:110, h:38, fontSize:n.fontSize||12, textAlign:n.textAlign||'center'};
     buildEl(S.nodes[n.id]);
 
     requestAnimationFrame(()=>{
@@ -778,9 +841,17 @@ document.getElementById('btn-clear').addEventListener('click',()=>{
   S.edges.length=0; S.sel=null; nid=0; hidePal();
 });
 
+let S_projectName = '';
 function setProjectName(name){
-  document.getElementById('project-name').textContent = name;
+  S_projectName = name || '';
+  document.getElementById('project-name-tb').textContent = name || '(без назви)';
 }
+
+// Click on project name → rename
+document.getElementById('project-name-tb').addEventListener('click', ()=>{
+  const name = prompt('Назва проєкту:', S_projectName);
+  if(name !== null) setProjectName(name);
+});
 
 
 // ─── EXPORT PNG ───────────────────────────────────────
@@ -819,9 +890,13 @@ document.getElementById('btn-export').addEventListener('click',()=>{
   for(const n of nodes){
     const nx=n.x-minX,ny=n.y-minY,w=n.w,h=n.h;
     const tc=n.textColor||'#ffffff';
+    const fs=n.fontSize||12;
+    const ta=n.textAlign||'center';
+    const textX = ta==='center' ? nx+w/2 : ta==='right' ? nx+w-12 : nx+12;
+    const anchor = ta==='center' ? 'middle' : ta==='right' ? 'end' : 'start';
     svg+=`<rect x="${nx}" y="${ny}" width="${w}" height="${h}" rx="10" fill="url(#g${n.id})" stroke="${n.color}" stroke-width="1.5"/>`;
     n.text.split('\n').forEach((ln,i)=>{
-      svg+=`<text x="${nx+12}" y="${ny+26+i*16}" font-family="sans-serif" font-size="12" font-weight="600" fill="${tc}">${ln.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</text>`;
+      svg+=`<text x="${textX}" y="${ny+fs+8+i*(fs+4)}" font-family="sans-serif" font-size="${fs}" font-weight="600" fill="${tc}" text-anchor="${anchor}">${ln.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</text>`;
     });
   }
   svg+='</svg>';
@@ -833,7 +908,7 @@ document.getElementById('btn-export').addEventListener('click',()=>{
     const c=document.createElement('canvas'); c.width=W*2; c.height=H*2;
     const ctx=c.getContext('2d'); ctx.scale(2,2); ctx.drawImage(img,0,0);
     URL.revokeObjectURL(url);
-    c.toBlob(bl=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(bl); a.download='mindmap.png'; a.click(); });
+    c.toBlob(bl=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(bl); a.download=(S_projectName||'mindmap')+'.png'; a.click(); });
   };
   img.src=url; toast('Завантаження PNG...');
 });
@@ -853,39 +928,31 @@ function exportTXT(){
 
   const children = {};
   Object.keys(nodes).forEach(id => children[id] = []);
-
-  edges.forEach(e=>{
-    children[e.from].push(e.to);
-  });
+  edges.forEach(e=>{ children[e.from].push(e.to); });
 
   const hasParent = new Set(edges.map(e=>e.to));
   const roots = Object.keys(nodes).filter(id => !hasParent.has(id));
 
-  function walk(id, depth=0, visited=new Set()){
-    if (visited.has(id)) {
-      return '  '.repeat(depth) + nodes[id].text + ' (↺)\n';
-    }
-
+  function walk(id, prefix='', visited=new Set()){
+    if(visited.has(id)) return prefix + ' ' + nodes[id].text + ' (↺)\n';
     visited.add(id);
-
-    let str = '  '.repeat(depth) + nodes[id].text + '\n';
-
-    for (let ch of children[id]){
-      str += walk(ch, depth+1, new Set(visited));
-    }
-
+    let str = prefix + ' ' + nodes[id].text + '\n';
+    children[id].forEach((ch, i)=>{
+      str += walk(ch, prefix + '.' + (i+1), new Set(visited));
+    });
     return str;
   }
 
-  let result = '';
-  roots.forEach(r=>{
-    result += walk(r) + '\n';
+  let result = (S_projectName ? S_projectName + '\n' + '─'.repeat(S_projectName.length) + '\n\n' : '');
+  roots.forEach((r, i)=>{
+    result += walk(r, String(i+1));
+    result += '\n';
   });
 
   const blob = new Blob([result], {type: 'text/plain'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'mindmap.txt';
+  a.download = (S_projectName || 'mindmap') + '.txt';
   a.click();
   toast('Експорт TXT ✓');
 }
@@ -908,10 +975,19 @@ requestAnimationFrame(()=>{
   S.tr={x:r.width/2-55, y:r.height/2-19, s:1};
   applyTr();
   const saved = localStorage.getItem('mm4');
-if(saved){
-  loadMap(JSON.parse(saved));
-}  
-  mkNode(-55,-19,'Головна ідея','#7c6af7');
+  if(saved){
+    loadMap(JSON.parse(saved));
+  } else {
+    mkNode(-55,-19,'Головна ідея','#7c6af7');
+  }
+
+  // Автозбереження кожні 30 секунд
+  setInterval(()=>{
+    localStorage.setItem('mm4', getData(S_projectName));
+    const ind = document.getElementById('autosave-ind');
+    ind.style.opacity='1';
+    setTimeout(()=>{ ind.style.opacity='0'; }, 1200);
+  }, 30000);
 });
 </script>
 </body>
