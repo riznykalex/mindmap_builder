@@ -933,19 +933,24 @@ function exportTXT(){
   const hasParent = new Set(edges.map(e=>e.to));
   const roots = Object.keys(nodes).filter(id => !hasParent.has(id));
 
-  function walk(id, prefix='', visited=new Set()){
-    if(visited.has(id)) return prefix + ' ' + nodes[id].text + ' (↺)\n';
+  function walk(id, prefix, visited=new Set()){
+    if(visited.has(id)) return (prefix ? prefix+' ' : '') + nodes[id].text + ' (↺)\n';
     visited.add(id);
-    let str = prefix + ' ' + nodes[id].text + '\n';
+    let str = (prefix ? prefix+' ' : '') + nodes[id].text + '\n';
     children[id].forEach((ch, i)=>{
-      str += walk(ch, prefix + '.' + (i+1), new Set(visited));
+      const childPrefix = prefix ? prefix+'.'+(i+1) : String(i+1);
+      str += walk(ch, childPrefix, new Set(visited));
     });
     return str;
   }
 
-  let result = (S_projectName ? S_projectName + '\n' + '─'.repeat(S_projectName.length) + '\n\n' : '');
-  roots.forEach((r, i)=>{
-    result += walk(r, String(i+1));
+  let result = '';
+  roots.forEach(r=>{
+    // root = title (no number), its children start at 1
+    result += nodes[r].text + '\n\n';
+    children[r].forEach((ch, i)=>{
+      result += walk(ch, String(i+1));
+    });
     result += '\n';
   });
 
