@@ -200,6 +200,8 @@
   #btn-theme { background: none; border: 1px solid var(--border); border-radius: 7px; width: 32px; height: 32px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: background .15s; flex-shrink: 0; }
   #btn-theme:hover { background: var(--surface2); }
 
+  #lang-select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 7px; padding: 4px 6px; font-family: 'Syne', sans-serif; font-size: 12px; cursor: pointer; flex-shrink: 0; }
+
   /* ── ZOOM ── */
   #zoom-info { position: fixed; bottom: 16px; right: 16px; font-family: 'Martian Mono', monospace; font-size: 11px; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; z-index: 200; }
   #autosave-ind { position: fixed; bottom: 16px; right: 80px; font-family: 'Martian Mono', monospace; font-size: 11px; color: #4ec9b0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; z-index: 200; opacity: 0; transition: opacity .4s; }
@@ -216,16 +218,16 @@
 <div id="toolbar">
   <div class="logo-wrap">
     <span class="logo">◈ MindMap</span>
-    <span id="project-name-tb" title="Клік — змінити назву проекту">(без назви)</span>
+    <span id="project-name-tb" title="Клік — змінити назву проекту" data-i18n-placeholder="noProject">(без назви)</span>
   </div>
   <div class="sep"></div>
   <button class="btn" id="btn-add">
     <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.4"/><path d="M6 3.5v5M3.5 6h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-    Вузол
+    <span id="lbl-btn-add">Вузол</span>
   </button>
   <button class="btn" id="btn-del">
     <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 3h8M5 3V2h2v1M4.5 5.5v3M7.5 5.5v3M2.5 3l.6 6.5h5.8L9.5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    Видалити
+    <span id="lbl-btn-del">Видалити</span>
   </button>
   <div class="sep"></div>
   <div class="tb-pick-wrap">
@@ -240,6 +242,16 @@
   <button class="btn danger" id="btn-clear">🗑 Очистити</button>
   <div class="sep"></div>
   <button id="btn-theme" title="Змінити тему">🌙</button>
+  <div class="sep"></div>
+  <select id="lang-select" title="Мова інтерфейсу">
+    <option value="uk">🇺🇦 UA</option>
+    <option value="en">🇬🇧 EN</option>
+    <option value="fr">🇫🇷 FR</option>
+    <option value="es">🇪🇸 ES</option>
+    <option value="de">🇩🇪 DE</option>
+    <option value="zh">🇨🇳 ZH</option>
+    <option value="ja">🇯🇵 JA</option>
+  </select>
   <span id="hint">2×клік = вузол · ● = з'єднати · Scroll = zoom · Пробіл+drag = pan · Del = видалити</span>
   <input type="file" id="file-input" accept=".json" style="display:none">
 </div>
@@ -255,21 +267,21 @@
 
 <!-- PALETTE -->
 <div id="palette-panel">
-  <div class="pal-title">Кольори вузла</div>
+  <div class="pal-title" id="lbl-pal-title">Кольори вузла</div>
   <div id="swatches"></div>
 
   <!-- Node color + text color quick pickers -->
   <div class="pal-section">
-    <span class="pal-section-label">Вузол:</span>
+    <span class="pal-section-label" id="lbl-pal-node">Вузол:</span>
     <input type="color" class="mini-pick" id="quick-node-color" value="#7c6af7" title="Колір вузла">
-    <span class="pal-section-label" style="margin-left:8px">Текст:</span>
+    <span class="pal-section-label" id="lbl-pal-text" style="margin-left:8px">Текст:</span>
     <input type="color" class="mini-pick" id="quick-text-color" value="#ffffff" title="Колір тексту">
     <button class="pal-btn" id="btn-add-swatch" style="margin-left:8px">+ До палітри</button>
   </div>
 
   <!-- Font size + alignment -->
   <div class="pal-section" style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px;gap:6px">
-    <span class="pal-section-label">Шрифт:</span>
+    <span class="pal-section-label" id="lbl-pal-font">Шрифт:</span>
     <select id="pal-font-size" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 6px;font-family:'Syne',sans-serif;font-size:12px;cursor:pointer">
       <option value="10">10</option>
       <option value="11">11</option>
@@ -281,7 +293,7 @@
       <option value="20">20</option>
       <option value="24">24</option>
     </select>
-    <span class="pal-section-label" style="margin-left:6px">Вирівн.:</span>
+    <span class="pal-section-label" id="lbl-pal-align" style="margin-left:6px">Вирівн.:</span>
     <div id="pal-align" style="display:flex;gap:3px">
       <button class="align-btn active" data-align="left" title="Ліво">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><line x1="1" y1="3" x2="13" y2="3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="1" y1="7" x2="9" y2="7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="1" y1="11" x2="11" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -307,6 +319,201 @@
 <div id="zoom-info">100%</div>
 
 <script>
+// ─── I18N ─────────────────────────────────────────────
+const I18N = {
+  uk: {
+    btnAdd: 'Вузол', btnDel: 'Видалити', btnSave: '💾 Зберегти',
+    btnLoad: '📂 Завантажити', btnExportPng: '⬇ PNG', btnExportTxt: '⬇ TXT',
+    btnClear: '🗑 Очистити',
+    bgLabel: 'Фон:',
+    palTitle: 'Кольори вузла', palNode: 'Вузол:', palText: 'Текст:',
+    palAddSwatch: '+ До палітри', palFont: 'Шрифт:', palAlign: 'Вирівн.:',
+    cmChild: '➕ Дочірній вузол', cmColor: '🎨 Колір', cmDel: '🗑 Видалити',
+    autosave: '✓ автозбережено',
+    hint: '2×клік = вузол · ● = з\'єднати · Scroll = zoom · Пробіл+drag = pan · Del = видалити',
+    noProject: '(без назви)', promptName: 'Назва проєкту:',
+    defaultNode: 'Вузол', defaultRoot: 'Головна ідея',
+    toastSaved: 'Збережено', toastLoaded: 'Завантажено ✓',
+    toastNoMap: 'Немає збереженої карти', toastNoNodes: 'Немає вузлів',
+    toastSwatchAdded: 'Колір додано ✓', toastExportTxt: 'Експорт TXT ✓',
+    toastPng: 'Завантаження PNG...', toastJsonErr: 'Помилка JSON ❌',
+    confirmClear: 'Очистити карту?',
+    alignLeft: 'Ліво', alignCenter: 'По центру', alignRight: 'Право',
+    titleNodeColor: 'Колір вузла', titleTextColor: 'Колір тексту',
+  },
+  en: {
+    btnAdd: 'Node', btnDel: 'Delete', btnSave: '💾 Save',
+    btnLoad: '📂 Load', btnExportPng: '⬇ PNG', btnExportTxt: '⬇ TXT',
+    btnClear: '🗑 Clear',
+    bgLabel: 'BG:',
+    palTitle: 'Node colors', palNode: 'Node:', palText: 'Text:',
+    palAddSwatch: '+ To palette', palFont: 'Font:', palAlign: 'Align:',
+    cmChild: '➕ Child node', cmColor: '🎨 Color', cmDel: '🗑 Delete',
+    autosave: '✓ autosaved',
+    hint: 'Dbl-click = node · ● = connect · Scroll = zoom · Space+drag = pan · Del = delete',
+    noProject: '(no name)', promptName: 'Project name:',
+    defaultNode: 'Node', defaultRoot: 'Main idea',
+    toastSaved: 'Saved', toastLoaded: 'Loaded ✓',
+    toastNoMap: 'No saved map', toastNoNodes: 'No nodes',
+    toastSwatchAdded: 'Color added ✓', toastExportTxt: 'TXT export ✓',
+    toastPng: 'Downloading PNG...', toastJsonErr: 'JSON error ❌',
+    confirmClear: 'Clear the map?',
+    alignLeft: 'Left', alignCenter: 'Center', alignRight: 'Right',
+    titleNodeColor: 'Node color', titleTextColor: 'Text color',
+  },
+  fr: {
+    btnAdd: 'Nœud', btnDel: 'Supprimer', btnSave: '💾 Enregistrer',
+    btnLoad: '📂 Charger', btnExportPng: '⬇ PNG', btnExportTxt: '⬇ TXT',
+    btnClear: '🗑 Effacer',
+    bgLabel: 'Fond:',
+    palTitle: 'Couleurs du nœud', palNode: 'Nœud:', palText: 'Texte:',
+    palAddSwatch: '+ Palette', palFont: 'Police:', palAlign: 'Aligner:',
+    cmChild: '➕ Nœud enfant', cmColor: '🎨 Couleur', cmDel: '🗑 Supprimer',
+    autosave: '✓ sauvegardé',
+    hint: 'Dbl-clic = nœud · ● = relier · Scroll = zoom · Espace+drag = pan · Suppr = effacer',
+    noProject: '(sans nom)', promptName: 'Nom du projet:',
+    defaultNode: 'Nœud', defaultRoot: 'Idée principale',
+    toastSaved: 'Enregistré', toastLoaded: 'Chargé ✓',
+    toastNoMap: 'Aucune carte sauvegardée', toastNoNodes: 'Aucun nœud',
+    toastSwatchAdded: 'Couleur ajoutée ✓', toastExportTxt: 'Export TXT ✓',
+    toastPng: 'Téléchargement PNG...', toastJsonErr: 'Erreur JSON ❌',
+    confirmClear: 'Effacer la carte?',
+    alignLeft: 'Gauche', alignCenter: 'Centrer', alignRight: 'Droite',
+    titleNodeColor: 'Couleur du nœud', titleTextColor: 'Couleur du texte',
+  },
+  es: {
+    btnAdd: 'Nodo', btnDel: 'Eliminar', btnSave: '💾 Guardar',
+    btnLoad: '📂 Cargar', btnExportPng: '⬇ PNG', btnExportTxt: '⬇ TXT',
+    btnClear: '🗑 Limpiar',
+    bgLabel: 'Fondo:',
+    palTitle: 'Colores del nodo', palNode: 'Nodo:', palText: 'Texto:',
+    palAddSwatch: '+ Paleta', palFont: 'Fuente:', palAlign: 'Alinear:',
+    cmChild: '➕ Nodo hijo', cmColor: '🎨 Color', cmDel: '🗑 Eliminar',
+    autosave: '✓ guardado auto',
+    hint: 'Doble clic = nodo · ● = conectar · Scroll = zoom · Espacio+drag = pan · Supr = eliminar',
+    noProject: '(sin nombre)', promptName: 'Nombre del proyecto:',
+    defaultNode: 'Nodo', defaultRoot: 'Idea principal',
+    toastSaved: 'Guardado', toastLoaded: 'Cargado ✓',
+    toastNoMap: 'Sin mapa guardado', toastNoNodes: 'Sin nodos',
+    toastSwatchAdded: 'Color añadido ✓', toastExportTxt: 'Exportar TXT ✓',
+    toastPng: 'Descargando PNG...', toastJsonErr: 'Error JSON ❌',
+    confirmClear: '¿Limpiar el mapa?',
+    alignLeft: 'Izquierda', alignCenter: 'Centrar', alignRight: 'Derecha',
+    titleNodeColor: 'Color del nodo', titleTextColor: 'Color del texto',
+  },
+  de: {
+    btnAdd: 'Knoten', btnDel: 'Löschen', btnSave: '💾 Speichern',
+    btnLoad: '📂 Laden', btnExportPng: '⬇ PNG', btnExportTxt: '⬇ TXT',
+    btnClear: '🗑 Leeren',
+    bgLabel: 'Hgr.:',
+    palTitle: 'Knotenfarben', palNode: 'Knoten:', palText: 'Text:',
+    palAddSwatch: '+ Palette', palFont: 'Schrift:', palAlign: 'Ausricht.:',
+    cmChild: '➕ Kindknoten', cmColor: '🎨 Farbe', cmDel: '🗑 Löschen',
+    autosave: '✓ autospeichern',
+    hint: 'Doppelklick = Knoten · ● = verbinden · Scroll = Zoom · Leertaste+ziehen = verschieben · Entf = löschen',
+    noProject: '(kein Name)', promptName: 'Projektname:',
+    defaultNode: 'Knoten', defaultRoot: 'Hauptidee',
+    toastSaved: 'Gespeichert', toastLoaded: 'Geladen ✓',
+    toastNoMap: 'Keine gespeicherte Karte', toastNoNodes: 'Keine Knoten',
+    toastSwatchAdded: 'Farbe hinzugefügt ✓', toastExportTxt: 'TXT exportiert ✓',
+    toastPng: 'PNG herunterladen...', toastJsonErr: 'JSON-Fehler ❌',
+    confirmClear: 'Karte leeren?',
+    alignLeft: 'Links', alignCenter: 'Mitte', alignRight: 'Rechts',
+    titleNodeColor: 'Knotenfarbe', titleTextColor: 'Textfarbe',
+  },
+  zh: {
+    btnAdd: '节点', btnDel: '删除', btnSave: '💾 保存',
+    btnLoad: '📂 载入', btnExportPng: '⬇ PNG', btnExportTxt: '⬇ TXT',
+    btnClear: '🗑 清空',
+    bgLabel: '背景:',
+    palTitle: '节点颜色', palNode: '节点:', palText: '文字:',
+    palAddSwatch: '+ 调色板', palFont: '字号:', palAlign: '对齐:',
+    cmChild: '➕ 子节点', cmColor: '🎨 颜色', cmDel: '🗑 删除',
+    autosave: '✓ 已自动保存',
+    hint: '双击=节点 · ●=连接 · 滚轮=缩放 · 空格+拖动=平移 · Del=删除',
+    noProject: '(无名称)', promptName: '项目名称:',
+    defaultNode: '节点', defaultRoot: '主要想法',
+    toastSaved: '已保存', toastLoaded: '已载入 ✓',
+    toastNoMap: '没有保存的地图', toastNoNodes: '没有节点',
+    toastSwatchAdded: '颜色已添加 ✓', toastExportTxt: 'TXT 导出 ✓',
+    toastPng: '正在下载 PNG...', toastJsonErr: 'JSON 错误 ❌',
+    confirmClear: '清空地图？',
+    alignLeft: '左对齐', alignCenter: '居中', alignRight: '右对齐',
+    titleNodeColor: '节点颜色', titleTextColor: '文字颜色',
+  },
+  ja: {
+    btnAdd: 'ノード', btnDel: '削除', btnSave: '💾 保存',
+    btnLoad: '📂 読込', btnExportPng: '⬇ PNG', btnExportTxt: '⬇ TXT',
+    btnClear: '🗑 消去',
+    bgLabel: '背景:',
+    palTitle: 'ノードの色', palNode: 'ノード:', palText: 'テキスト:',
+    palAddSwatch: '+ パレット', palFont: 'フォント:', palAlign: '揃え:',
+    cmChild: '➕ 子ノード', cmColor: '🎨 色', cmDel: '🗑 削除',
+    autosave: '✓ 自動保存',
+    hint: 'ダブルクリック=ノード · ●=接続 · スクロール=ズーム · スペース+ドラッグ=移動 · Del=削除',
+    noProject: '(名前なし)', promptName: 'プロジェクト名:',
+    defaultNode: 'ノード', defaultRoot: 'メインアイデア',
+    toastSaved: '保存しました', toastLoaded: '読み込みました ✓',
+    toastNoMap: '保存されたマップなし', toastNoNodes: 'ノードなし',
+    toastSwatchAdded: '色を追加しました ✓', toastExportTxt: 'TXT エクスポート ✓',
+    toastPng: 'PNG ダウンロード中...', toastJsonErr: 'JSON エラー ❌',
+    confirmClear: 'マップを消去しますか？',
+    alignLeft: '左揃え', alignCenter: '中央揃え', alignRight: '右揃え',
+    titleNodeColor: 'ノードの色', titleTextColor: 'テキストの色',
+  },
+};
+
+let currentLang = 'uk';
+function t(key){ return I18N[currentLang]?.[key] ?? I18N.uk[key] ?? key; }
+
+function applyLang(){
+  const L = I18N[currentLang];
+  const set = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+  const setQ = (sel, val) => { const el=document.querySelector(sel); if(el) el.textContent=val; };
+  // toolbar
+  set('lbl-btn-add', L.btnAdd);
+  set('lbl-btn-del', L.btnDel);
+  set('btn-save', L.btnSave);
+  set('btn-load', L.btnLoad);
+  set('btn-export', L.btnExportPng);
+  set('btn-export-txt', L.btnExportTxt);
+  set('btn-clear', L.btnClear);
+  setQ('.tb-pick-wrap span', L.bgLabel);
+  set('hint', L.hint);
+  // palette
+  set('lbl-pal-title', L.palTitle);
+  set('lbl-pal-node', L.palNode);
+  set('lbl-pal-text', L.palText);
+  set('lbl-pal-font', L.palFont);
+  set('lbl-pal-align', L.palAlign);
+  set('btn-add-swatch', L.palAddSwatch);
+  // color picker titles
+  const qnc = document.getElementById('quick-node-color');
+  const qtc = document.getElementById('quick-text-color');
+  if(qnc) qnc.title = L.titleNodeColor;
+  if(qtc) qtc.title = L.titleTextColor;
+  document.querySelectorAll('.align-btn').forEach(btn => {
+    if(btn.dataset.align === 'left')   btn.title = L.alignLeft;
+    if(btn.dataset.align === 'center') btn.title = L.alignCenter;
+    if(btn.dataset.align === 'right')  btn.title = L.alignRight;
+  });
+  // ctx menu
+  set('cm-child', L.cmChild);
+  set('cm-color', L.cmColor);
+  set('cm-del', L.cmDel);
+  // autosave indicator
+  set('autosave-ind', L.autosave);
+  // project name placeholder if empty
+  const pn = document.getElementById('project-name-tb');
+  if(pn && !S_projectName) pn.textContent = L.noProject;
+}
+
+document.getElementById('lang-select').addEventListener('change', e=>{
+  currentLang = e.target.value;
+  localStorage.setItem('mm_lang', currentLang);
+  applyLang();
+});
+
 // ─── STATE ────────────────────────────────────────────
 const S = {
   nodes: {},      // id → {id,x,y,text,color,textColor,w,h}
@@ -398,7 +605,8 @@ document.getElementById('bg-color-input').addEventListener('input', e=>{
 });
 
 // ─── NODE ─────────────────────────────────────────────
-function mkNode(wx,wy,text='Вузол',color='#7c6af7',parentId=null,textColor='#ffffff',fontSize=12,textAlign='center'){
+function mkNode(wx,wy,text=null,color='#7c6af7',parentId=null,textColor='#ffffff',fontSize=12,textAlign='center'){
+  if(text===null) text=t('defaultNode');
   const id='n'+(++nid);
   const n={id,x:wx,y:wy,text,color,textColor,fontSize,textAlign,w:110,h:38};
   S.nodes[id]=n;
@@ -434,9 +642,9 @@ function buildEl(n){
   dot.addEventListener('mousedown',e=>{ e.stopPropagation(); beginConnect(n.id,e); });
 
   const acts=document.createElement('div'); acts.className='node-actions';
-  const plus=document.createElement('div'); plus.className='node-btn'; plus.title='Дочірній вузол'; plus.textContent='+';
+  const plus=document.createElement('div'); plus.className='node-btn'; plus.title=t('cmChild'); plus.textContent='+';
   plus.addEventListener('mousedown',e=>{ e.stopPropagation(); addChild(n.id); });
-  const minus=document.createElement('div'); minus.className='node-btn minus'; minus.title='Видалити'; minus.textContent='−';
+  const minus=document.createElement('div'); minus.className='node-btn minus'; minus.title=t('btnDel'); minus.textContent='−';
   minus.addEventListener('mousedown',e=>{ e.stopPropagation(); pickNode(n.id); delSel(); });
   acts.appendChild(plus); acts.appendChild(minus);
 
@@ -503,7 +711,7 @@ function addChild(pid){
   const cy = p.y + (p.h||38)/2;
   const nx = cx + Math.cos(angleRad) * RADIUS - 55;
   const ny = cy + Math.sin(angleRad) * RADIUS - 19;
-  mkNode(nx, ny, 'Вузол', p.color, pid, p.textColor, p.fontSize||12, p.textAlign||'center');
+  mkNode(nx, ny, null, p.color, pid, p.textColor, p.fontSize||12, p.textAlign||'center');
 }
 
 function setNodeAppearance(id,color,textColor){
@@ -718,7 +926,7 @@ qTextCol.addEventListener('input',()=>{
 document.getElementById('btn-add-swatch').addEventListener('click',()=>{
   const c=qNodeCol.value;
   if(!S.palette.includes(c)) S.palette.push(c);
-  renderSwatches(); toast('Колір додано ✓');
+  renderSwatches(); toast(t('toastSwatchAdded'));
 });
 
 function showPal(){
@@ -772,7 +980,7 @@ function getData(projectName='mindmap'){
 }
 
 document.getElementById('btn-save').addEventListener('click',()=>{
-  let name = prompt('Назва проєкту:', S_projectName || 'mindmap');
+  let name = prompt(t('promptName'), S_projectName || 'mindmap');
 
   if(name === null) return; // скасовано
   if(!name.trim()) name = S_projectName || 'mindmap';
@@ -789,7 +997,7 @@ document.getElementById('btn-save').addEventListener('click',()=>{
   // backup
   localStorage.setItem('mm4', data);
 
-  toast('Збережено: ' + name + ' ✓');
+  toast(t('toastSaved')+': '+name+' ✓');
 });
 
 
@@ -807,9 +1015,9 @@ fileInput.addEventListener('change', (e)=>{
     try {
       const data = JSON.parse(ev.target.result);
       loadMap(data);
-      toast('JSON завантажено ✓');
+      toast(t('toastLoaded'));
     } catch(err){
-      toast('Помилка JSON ❌');
+      toast(t('toastJsonErr'));
     }
   };
 
@@ -821,7 +1029,7 @@ function loadMap(data){
 
 if(data.name){
   setProjectName(data.name);
-  toast('Завантажено: ' + data.name);
+  toast(t('toastLoaded')+': '+(data.name||''));
 }
   world.innerHTML='';
   edgesSvg.innerHTML='';
@@ -863,7 +1071,7 @@ if(data.name){
 }
 
 document.getElementById('btn-clear').addEventListener('click',()=>{
-  if(!confirm('Очистити карту?')) return;
+  if(!confirm(t('confirmClear'))) return;
   world.innerHTML=''; edgesSvg.innerHTML='';
   Object.keys(S.nodes).forEach(k=>delete S.nodes[k]);
   S.edges.length=0; S.sel=null; nid=0; hidePal();
@@ -872,19 +1080,19 @@ document.getElementById('btn-clear').addEventListener('click',()=>{
 let S_projectName = '';
 function setProjectName(name){
   S_projectName = name || '';
-  document.getElementById('project-name-tb').textContent = name || '(без назви)';
+  document.getElementById('project-name-tb').textContent = name || t('noProject');
 }
 
 // Click on project name → rename
 document.getElementById('project-name-tb').addEventListener('click', ()=>{
-  const name = prompt('Назва проєкту:', S_projectName);
+  const name = prompt(t('promptName'), S_projectName);
   if(name !== null) setProjectName(name);
 });
 
 
 // ─── EXPORT PNG ───────────────────────────────────────
 document.getElementById('btn-export').addEventListener('click',()=>{
-  const nodes=Object.values(S.nodes); if(!nodes.length){toast('Немає вузлів');return;}
+  const nodes=Object.values(S.nodes); if(!nodes.length){toast(t('toastNoNodes'));return;}
   const pad=60;
   const minX=Math.min(...nodes.map(n=>n.x))-pad, minY=Math.min(...nodes.map(n=>n.y))-pad;
   const maxX=Math.max(...nodes.map(n=>n.x+n.w))+pad, maxY=Math.max(...nodes.map(n=>n.y+n.h))+pad;
@@ -938,7 +1146,7 @@ document.getElementById('btn-export').addEventListener('click',()=>{
     URL.revokeObjectURL(url);
     c.toBlob(bl=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(bl); a.download=(S_projectName||'mindmap')+'.png'; a.click(); });
   };
-  img.src=url; toast('Завантаження PNG...');
+  img.src=url; toast(t('toastPng'));
 });
 
 function attachEllipseExport(n, fromX, fromY, offX, offY){
@@ -987,7 +1195,7 @@ function exportTXT(){
   a.href = URL.createObjectURL(blob);
   a.download = (S_projectName || 'mindmap') + '.txt';
   a.click();
-  toast('Експорт TXT ✓');
+  toast(t('toastExportTxt'));
 }
 
 document.getElementById('btn-export-txt').addEventListener('click', exportTXT);
@@ -1003,7 +1211,17 @@ function toast(msg){
 
 // ─── INIT ─────────────────────────────────────────────
 renderSwatches();
+// Restore language before DOM manipulation
+const savedLang = localStorage.getItem('mm_lang');
+if(savedLang && I18N[savedLang]){
+  currentLang = savedLang;
+  document.getElementById('lang-select').value = savedLang;
+} else {
+  currentLang = 'uk';
+  document.getElementById('lang-select').value = 'uk';
+}
 requestAnimationFrame(()=>{
+  applyLang(); // after full DOM ready
   const r=canvas.getBoundingClientRect();
   S.tr={x:r.width/2-55, y:r.height/2-19, s:1};
   applyTr();
@@ -1011,7 +1229,7 @@ requestAnimationFrame(()=>{
   if(saved){
     loadMap(JSON.parse(saved));
   } else {
-    mkNode(-55,-19,'Головна ідея','#7c6af7');
+    mkNode(-55,-19,t('defaultRoot'),'#7c6af7');
   }
 
   // Автозбереження кожні 30 секунд
