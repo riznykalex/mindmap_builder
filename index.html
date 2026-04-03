@@ -104,10 +104,91 @@
     cursor: grab;
     border: 2px solid transparent;
     transition: border-color .15s, box-shadow .15s;
-    display: inline-block;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   }
   .node:active { cursor: grabbing; }
   .node.sel { border-color: #fff !important; box-shadow: 0 0 0 3px rgba(255,255,255,.15); }
+
+  /* node image */
+  .node-img {
+    display: block;
+    float: none;
+    margin: 0;
+    border-radius: 6px;
+    object-fit: contain;
+    max-height: 80px;
+    max-width: 80px;
+	  flex-shrink: 0;
+    cursor: zoom-in;
+  }
+  .node-img-clearfix::after {
+    content: ''; display: table; clear: both;
+  }
+  
+  .node-img-clearfix {
+  display: none;
+}
+  
+  .node-img-del {
+    position: absolute; top: 4px; right: 4px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: rgba(0,0,0,.55); color: #fff;
+    font-size: 11px; cursor: pointer;
+    display: none; align-items: center; justify-content: center;
+    z-index: 15; line-height: 1;
+  }
+  .node:hover .node-img-del { display: flex; }
+
+.node-text {
+  flex: 1;
+  white-space: pre-wrap;
+}
+
+
+  /* image panel in palette */
+  #pal-image-section {
+    flex-direction: column; gap: 7px; padding-top: 7px;
+  }
+  .img-row { display: flex; gap: 6px; align-items: center; }
+  .img-row input[type=text] {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); border-radius: 6px; padding: 5px 8px;
+    font-family: 'Martian Mono', monospace; font-size: 11px;
+  }
+  .img-upload-btn {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); border-radius: 6px; padding: 5px 10px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    font-family: 'Syne', sans-serif; white-space: nowrap;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .img-upload-btn:hover { background: var(--border); }
+  .img-upload-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .img-upload-btn.primary:hover { filter: brightness(1.15); }
+  #img-upload-progress { font-size: 10px; color: var(--text-muted); font-family: 'Martian Mono', monospace; display: none; }
+
+  /* lightbox */
+  #lightbox {
+    display: none; position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,.82);
+    align-items: center; justify-content: center;
+    cursor: zoom-out;
+  }
+  #lightbox.open { display: flex; }
+  #lightbox img {
+    max-width: 90vw; max-height: 90vh;
+    border-radius: 10px;
+    box-shadow: 0 8px 48px rgba(0,0,0,.6);
+    object-fit: contain;
+  }
+  #lightbox-close {
+    position: fixed; top: 18px; right: 22px;
+    color: #fff; font-size: 28px; cursor: pointer;
+    line-height: 1; opacity: .7;
+  }
+  #lightbox-close:hover { opacity: 1; }
 
   .node-text {
     font-size: 12px; font-weight: 600; line-height: 1.4;
@@ -306,17 +387,48 @@
       </button>
     </div>
   </div>
+
+  <!-- Image section — collapsed by default -->
+  <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:4px;display:flex;align-items:center;gap:6px">
+    <button class="img-upload-btn" id="btn-img-toggle" title="Зображення" style="padding:5px 8px">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="2" width="12" height="10" rx="2" stroke="currentColor" stroke-width="1.3"/><circle cx="4.5" cy="5.5" r="1" fill="currentColor"/><path d="M1 9.5l3-3 2.5 2.5 2-2 3.5 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span id="lbl-pal-image">Зображення</span>
+    </button>
+    <span id="img-upload-progress" style="font-size:10px;color:var(--text-muted);font-family:'Martian Mono',monospace;display:none">⏳</span>
+  </div>
+
+  <div id="pal-image-section" style="display:none;flex-direction:column;gap:7px;padding-top:7px">
+    <div class="img-row">
+      <button class="img-upload-btn" id="btn-img-file">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 8.5V2M4 4.5L6.5 2 9 4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 9.5v1a1 1 0 001 1h7a1 1 0 001-1v-1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <span id="lbl-img-file">Завантажити файл</span>
+      </button>
+      <button class="img-upload-btn" id="btn-img-clipboard">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1.5" y="3.5" width="8" height="9" rx="1" stroke="currentColor" stroke-width="1.3"/><path d="M4 3.5V2.5a1 1 0 011-1h5a1 1 0 011 1v7a1 1 0 01-1 1H10" stroke="currentColor" stroke-width="1.3"/></svg>
+        <span id="lbl-img-clipboard">З буферу</span>
+      </button>
+    </div>
+    <div class="img-row">
+      <input type="text" id="img-url-input" placeholder="https://…">
+      <button class="img-upload-btn primary" id="btn-img-url">
+        <span id="lbl-img-url">Додати URL</span>
+      </button>
+    </div>
+  </div>
+  <input type="file" id="img-file-input" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none">
 </div>
 
 <!-- CTX MENU -->
-<div id="ctx-menu">
-  <div class="mi" id="cm-child">➕ Дочірній вузол</div>
-  <div class="mi" id="cm-color">🎨 Колір</div>
-  <div class="mi danger" id="cm-del">🗑 Видалити</div>
-</div>
+<!-- ctx-menu removed -->
 
 <div id="autosave-ind">✓ автозбережено</div>
 <div id="zoom-info">100%</div>
+
+<!-- Lightbox -->
+<div id="lightbox">
+  <span id="lightbox-close">×</span>
+  <img id="lightbox-img" src="" alt="">
+</div>
 
 <script>
 // ─── I18N ─────────────────────────────────────────────
@@ -339,7 +451,10 @@ const I18N = {
     toastPng: 'Завантаження PNG...', toastJsonErr: 'Помилка JSON ❌',
     confirmClear: 'Очистити карту?',
     alignLeft: 'Ліво', alignCenter: 'По центру', alignRight: 'Право',
+    palImage: 'Зображення:', imgFile: 'Завантажити файл', imgClipboard: 'З буферу', imgUrl: 'Додати URL',
+    toastSelectNode: 'Спочатку виберіть вузол', toastImgUploaded: 'Зображення завантажено', toastImgAdded: 'Зображення додано', toastNoImgClipboard: 'У буфері немає зображення',
     titleNodeColor: 'Колір вузла', titleTextColor: 'Колір тексту',
+    btnChild: 'Дочірній вузол', btnDuplicate: 'Дублювати', cmDuplicate: '📄 Дублювати', cmCopy: '📋 Копіювати', cmPaste: '📋 Вставити',
   },
   en: {
     btnAdd: 'Node', btnDel: 'Delete', btnSave: '💾 Save',
@@ -359,7 +474,10 @@ const I18N = {
     toastPng: 'Downloading PNG...', toastJsonErr: 'JSON error ❌',
     confirmClear: 'Clear the map?',
     alignLeft: 'Left', alignCenter: 'Center', alignRight: 'Right',
+    palImage: 'Image:', imgFile: 'Upload file', imgClipboard: 'From clipboard', imgUrl: 'Add URL',
+    toastSelectNode: 'Select a node first', toastImgUploaded: 'Image uploaded', toastImgAdded: 'Image added', toastNoImgClipboard: 'No image in clipboard',
     titleNodeColor: 'Node color', titleTextColor: 'Text color',
+    btnChild: 'Child node', btnDuplicate: 'Duplicate', cmDuplicate: '📄 Duplicate', cmCopy: '📋 Copy', cmPaste: '📋 Paste',
   },
   fr: {
     btnAdd: 'Nœud', btnDel: 'Supprimer', btnSave: '💾 Enregistrer',
@@ -379,7 +497,10 @@ const I18N = {
     toastPng: 'Téléchargement PNG...', toastJsonErr: 'Erreur JSON ❌',
     confirmClear: 'Effacer la carte?',
     alignLeft: 'Gauche', alignCenter: 'Centrer', alignRight: 'Droite',
+    palImage: 'Image:', imgFile: 'Télécharger', imgClipboard: 'Presse-papiers', imgUrl: 'Ajouter URL',
+    toastSelectNode: 'Sélectionnez un nœud', toastImgUploaded: 'Image téléchargée', toastImgAdded: 'Image ajoutée', toastNoImgClipboard: 'Pas d image dans le presse-papiers',
     titleNodeColor: 'Couleur du nœud', titleTextColor: 'Couleur du texte',
+    btnChild: 'Nœud enfant', btnDuplicate: 'Dupliquer', cmDuplicate: '📄 Dupliquer', cmCopy: '📋 Copier', cmPaste: '📋 Coller',
   },
   es: {
     btnAdd: 'Nodo', btnDel: 'Eliminar', btnSave: '💾 Guardar',
@@ -399,7 +520,10 @@ const I18N = {
     toastPng: 'Descargando PNG...', toastJsonErr: 'Error JSON ❌',
     confirmClear: '¿Limpiar el mapa?',
     alignLeft: 'Izquierda', alignCenter: 'Centrar', alignRight: 'Derecha',
+    palImage: 'Imagen:', imgFile: 'Subir archivo', imgClipboard: 'Portapapeles', imgUrl: 'Añadir URL',
+    toastSelectNode: 'Seleccione un nodo', toastImgUploaded: 'Imagen subida', toastImgAdded: 'Imagen añadida', toastNoImgClipboard: 'No hay imagen en el portapapeles',
     titleNodeColor: 'Color del nodo', titleTextColor: 'Color del texto',
+    btnChild: 'Nodo hijo', btnDuplicate: 'Duplicar', cmDuplicate: '📄 Duplicar', cmCopy: '📋 Copiar', cmPaste: '📋 Pegar',
   },
   de: {
     btnAdd: 'Knoten', btnDel: 'Löschen', btnSave: '💾 Speichern',
@@ -419,7 +543,10 @@ const I18N = {
     toastPng: 'PNG herunterladen...', toastJsonErr: 'JSON-Fehler ❌',
     confirmClear: 'Karte leeren?',
     alignLeft: 'Links', alignCenter: 'Mitte', alignRight: 'Rechts',
+    palImage: 'Bild:', imgFile: 'Datei hochladen', imgClipboard: 'Zwischenablage', imgUrl: 'URL hinzufügen',
+    toastSelectNode: 'Knoten auswählen', toastImgUploaded: 'Bild hochgeladen', toastImgAdded: 'Bild hinzugefügt', toastNoImgClipboard: 'Kein Bild in der Zwischenablage',
     titleNodeColor: 'Knotenfarbe', titleTextColor: 'Textfarbe',
+    btnChild: 'Kindknoten', btnDuplicate: 'Duplizieren', cmDuplicate: '📄 Duplizieren', cmCopy: '📋 Kopieren', cmPaste: '📋 Einfügen',
   },
   zh: {
     btnAdd: '节点', btnDel: '删除', btnSave: '💾 保存',
@@ -439,7 +566,10 @@ const I18N = {
     toastPng: '正在下载 PNG...', toastJsonErr: 'JSON 错误 ❌',
     confirmClear: '清空地图？',
     alignLeft: '左对齐', alignCenter: '居中', alignRight: '右对齐',
+    palImage: '图片:', imgFile: '上传文件', imgClipboard: '剪贴板', imgUrl: '添加链接',
+    toastSelectNode: '请先选择节点', toastImgUploaded: '图片已上传', toastImgAdded: '图片已添加', toastNoImgClipboard: '剪贴板中没有图片',
     titleNodeColor: '节点颜色', titleTextColor: '文字颜色',
+    btnChild: '子节点', btnDuplicate: '复制节点', cmDuplicate: '📄 复制节点', cmCopy: '📋 复制', cmPaste: '📋 粘贴',
   },
   ja: {
     btnAdd: 'ノード', btnDel: '削除', btnSave: '💾 保存',
@@ -459,11 +589,20 @@ const I18N = {
     toastPng: 'PNG ダウンロード中...', toastJsonErr: 'JSON エラー ❌',
     confirmClear: 'マップを消去しますか？',
     alignLeft: '左揃え', alignCenter: '中央揃え', alignRight: '右揃え',
+    palImage: '画像:', imgFile: 'ファイルをアップロード', imgClipboard: 'クリップボード', imgUrl: 'URLを追加',
+    toastSelectNode: 'ノードを選択してください', toastImgUploaded: '画像をアップロードしました', toastImgAdded: '画像を追加しました', toastNoImgClipboard: 'クリップボードに画像がありません',
     titleNodeColor: 'ノードの色', titleTextColor: 'テキストの色',
+    btnChild: '子ノード', btnDuplicate: '複製', cmDuplicate: '📄 複製', cmCopy: '📋 コピー', cmPaste: '📋 貼り付け',
   },
 };
 
-let currentLang = 'uk';
+
+
+let clipboardNode = null;
+
+
+
+let currentLang = 'en';
 function t(key){ return I18N[currentLang]?.[key] ?? I18N.uk[key] ?? key; }
 
 function applyLang(){
@@ -498,11 +637,17 @@ function applyLang(){
     if(btn.dataset.align === 'right')  btn.title = L.alignRight;
   });
   // ctx menu
-  set('cm-child', L.cmChild);
-  set('cm-color', L.cmColor);
-  set('cm-del', L.cmDel);
+  // node button tooltips (update all existing nodes)
+  document.querySelectorAll('.node-btn.dup').forEach(b => { b.title = L.btnDuplicate; });
+  document.querySelectorAll('.node-btn.minus').forEach(b => { b.title = L.btnDel; });
+  document.querySelectorAll('.node-btn:not(.dup):not(.minus)').forEach(b => { b.title = L.btnChild; });
   // autosave indicator
   set('autosave-ind', L.autosave);
+  // image section
+  set('lbl-pal-image', L.palImage);
+  set('lbl-img-file', L.imgFile);
+  set('lbl-img-clipboard', L.imgClipboard);
+  set('lbl-img-url', L.imgUrl);
   // project name placeholder if empty
   const pn = document.getElementById('project-name-tb');
   if(pn && !S_projectName) pn.textContent = L.noProject;
@@ -535,7 +680,7 @@ const palPanel = document.getElementById('palette-panel');
 const swDiv    = document.getElementById('swatches');
 const cpick    = document.getElementById('new-color-picker');
 const chex     = document.getElementById('new-color-hex');
-const ctxMenu  = document.getElementById('ctx-menu');
+// ctx-menu removed
 const qNodeCol = document.getElementById('quick-node-color');
 const qTextCol = document.getElementById('quick-text-color');
 const fileInput = document.getElementById('file-input');
@@ -555,6 +700,69 @@ function lighten(hex, pct){
   b=Math.min(255, Math.round(b+(255-b)*pct));
   return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
 }
+
+function getParentId(id){
+  const edge = S.edges.find(e => e.to === id);
+  return edge ? edge.from : null;
+}
+
+
+// ─── DUPLICATE SUBTREE ─────────────────────────
+
+function duplicateSubtree(id, parentId = null, offset = null){
+  const n = S.nodes[id];
+  if(!n) return null;
+
+  if(!offset){
+    offset = {
+      x: 60 + Math.random()*20,
+      y: 40 + Math.random()*20
+    };
+  }
+
+  const newId = mkNode(
+    n.x + offset.x,
+    n.y + offset.y,
+    n.text,
+    n.color,
+    parentId,
+    n.textColor,
+    n.fontSize,
+    n.textAlign,
+    n.imageUrl,
+    true  // silent — не фокусуємо, не перериваємо рекурсію
+  );
+
+  const children = S.edges
+    .filter(e => e.from === id)
+    .map(e => e.to);
+
+  children.forEach(childId => {
+    duplicateSubtree(childId, newId, offset);
+  });
+
+  return newId;
+}
+
+// ─── MAIN DUPLICATE ACTION ─────────────────────────
+
+function duplicateNode(id){
+  const parentId = getParentId(id);
+  const newId = duplicateSubtree(id, parentId);
+  if(!newId) return;
+  // два rAF: перший — браузер малює DOM, другий — розміри вже відомі
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      Object.values(S.nodes).forEach(n=>{
+        const el=document.getElementById(n.id);
+        if(el){ n.w=el.offsetWidth; n.h=el.offsetHeight; }
+      });
+      drawEdges();
+      pickNode(newId);
+    });
+  });
+}
+
 
 // ─── TRANSFORM ────────────────────────────────────────
 function applyTr(){
@@ -605,20 +813,22 @@ document.getElementById('bg-color-input').addEventListener('input', e=>{
 });
 
 // ─── NODE ─────────────────────────────────────────────
-function mkNode(wx,wy,text=null,color='#7c6af7',parentId=null,textColor='#ffffff',fontSize=12,textAlign='center'){
+function mkNode(wx,wy,text=null,color='#7c6af7',parentId=null,textColor='#ffffff',fontSize=12,textAlign='center',imageUrl=null,silent=false){
   if(text===null) text=t('defaultNode');
   const id='n'+(++nid);
-  const n={id,x:wx,y:wy,text,color,textColor,fontSize,textAlign,w:110,h:38};
+  const n={id,x:wx,y:wy,text,color,textColor,fontSize,textAlign,imageUrl,w:110,h:38};
   S.nodes[id]=n;
   buildEl(n);
   if(parentId) mkEdge(parentId,id);
-  pickNode(id);
+  if(!silent) pickNode(id);
   requestAnimationFrame(()=>{
     const el=document.getElementById(id);
     n.w=el.offsetWidth; n.h=el.offsetHeight;
     drawEdges();
-    const ta=el.querySelector('.node-text');
-    ta.focus(); ta.select();
+    if(!silent){
+      const ta=el.querySelector('.node-text');
+      ta.focus(); ta.select();
+    }
   });
   return id;
 }
@@ -642,18 +852,25 @@ function buildEl(n){
   dot.addEventListener('mousedown',e=>{ e.stopPropagation(); beginConnect(n.id,e); });
 
   const acts=document.createElement('div'); acts.className='node-actions';
-  const plus=document.createElement('div'); plus.className='node-btn'; plus.title=t('cmChild'); plus.textContent='+';
+  const plus=document.createElement('div'); plus.className='node-btn'; plus.title=t('btnChild'); plus.textContent='+';
   plus.addEventListener('mousedown',e=>{ e.stopPropagation(); addChild(n.id); });
   const minus=document.createElement('div'); minus.className='node-btn minus'; minus.title=t('btnDel'); minus.textContent='−';
   minus.addEventListener('mousedown',e=>{ e.stopPropagation(); pickNode(n.id); delSel(); });
-  acts.appendChild(plus); acts.appendChild(minus);
+  const dup=document.createElement('div'); dup.className='node-btn dup'; dup.title=t('btnDuplicate'); dup.textContent='⧉';
+  dup.addEventListener('mousedown',e=>{ e.stopPropagation(); duplicateNode(n.id); });
+  acts.appendChild(plus); acts.appendChild(dup); acts.appendChild(minus);
 
-  el.appendChild(ta); el.appendChild(dot); el.appendChild(acts);
+  // image above text (float left)
+  if(n.imageUrl) el.appendChild(buildImgEl(n.id, n.imageUrl));
+  el.appendChild(ta);
+  // clearfix for float
+  const cf = document.createElement('div');
+  cf.className = 'node-img-clearfix';
+  el.appendChild(cf); el.appendChild(dot); el.appendChild(acts);
   world.appendChild(el);
 
   draggable(el,n.id);
   el.addEventListener('mousedown',e=>{ if(e.button===0) pickNode(n.id); });
-  el.addEventListener('contextmenu',e=>{ e.preventDefault(); pickNode(n.id); showCtx(e.clientX,e.clientY,n.id); });
 
   requestAnimationFrame(()=>{ n.w=el.offsetWidth; n.h=el.offsetHeight; drawEdges(); });
 }
@@ -672,8 +889,186 @@ function styleNode(el,n){
   }
 }
 
-const MIN_NODE_W = 60;
-const MAX_NODE_W = 220;
+function copyNode(id){
+  const n = S.nodes[id];
+  clipboardNode = JSON.parse(JSON.stringify(n));
+}
+
+function pasteNode(){
+  if(!clipboardNode) return;
+  const r = canvas.getBoundingClientRect();
+  const wp = s2w(r.left + r.width/2, r.top + r.height/2);
+
+  mkNode(
+    wp.x - 50,
+    wp.y - 20,
+    clipboardNode.text,
+    clipboardNode.color,
+    null,
+    clipboardNode.textColor,
+    clipboardNode.fontSize,
+    clipboardNode.textAlign,
+    clipboardNode.imageUrl
+  );
+}
+
+function duplicateNode(id){
+  copyNode(id);
+
+  const n = S.nodes[id];
+  const wp = { x: n.x + 40, y: n.y + 40 };
+
+  mkNode(
+    wp.x,
+    wp.y,
+    n.text,
+    n.color,
+    null,
+    n.textColor,
+    n.fontSize,
+    n.textAlign,
+    n.imageUrl
+  );
+}
+
+// ─── IMAGE ────────────────────────────────────────────
+const CONFIG = {
+  API_URL:        'https://mindmap.riznyk-alex-mail.workers.dev',
+  NODE_RADIUS:    220,
+  TRIANGLE_WIDTH: 20,
+  MAX_NODE_WIDTH: 220,
+  MIN_NODE_WIDTH: 60,
+};
+
+function buildImgEl(nodeId, url){
+  const img = document.createElement('img');
+  img.className = 'node-img'; img.src = url; img.draggable = false;
+  img.addEventListener('mousedown', e => e.stopPropagation());
+  img.addEventListener('click', e => { e.stopPropagation(); openLightbox(url); });
+
+  const del = document.createElement('div');
+  del.className = 'node-img-del'; del.textContent = '×';
+  del.addEventListener('mousedown', e => { e.stopPropagation(); removeNodeImage(nodeId); });
+
+  const wrap = document.createElement('div');
+  wrap.className = 'node-img-wrap';
+wrap.style.cssText = 'position:relative;';
+  wrap.appendChild(img);
+  wrap.appendChild(del);
+  return wrap;
+}
+
+function setNodeImage(id, url){
+  const n=S.nodes[id]; if(!n) return;
+  n.imageUrl = url;
+  const el=document.getElementById(id);
+  el.querySelectorAll('.node-img-wrap').forEach(d=>d.remove());
+  el.insertBefore(buildImgEl(id, url), el.firstChild);
+  requestAnimationFrame(()=>{ n.w=el.offsetWidth; n.h=el.offsetHeight; drawEdges(); });
+}
+
+function removeNodeImage(id){
+  const n=S.nodes[id]; if(!n) return;
+  n.imageUrl=null;
+  const el=document.getElementById(id);
+  el.querySelectorAll('.node-img-wrap').forEach(d=>d.remove());
+  requestAnimationFrame(()=>{ n.w=el.offsetWidth; n.h=el.offsetHeight; drawEdges(); });
+}
+
+function openLightbox(url){
+  document.getElementById('lightbox-img').src = url;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox(){
+  document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lightbox-img').src = '';
+}
+document.getElementById('lightbox').addEventListener('click', closeLightbox);
+document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
+window.addEventListener('keydown', e => { if(e.key==='Escape') closeLightbox(); });
+
+// image section toggle
+let imgSectionOpen = false;
+document.getElementById('btn-img-toggle').addEventListener('click', ()=>{
+  imgSectionOpen = !imgSectionOpen;
+  const body = document.getElementById('pal-image-section');
+  body.style.display = imgSectionOpen ? 'flex' : 'none';
+  document.getElementById('btn-img-toggle').style.background =
+    imgSectionOpen ? 'var(--accent)' : '';
+  document.getElementById('btn-img-toggle').style.color =
+    imgSectionOpen ? '#fff' : '';
+  document.getElementById('btn-img-toggle').style.borderColor =
+    imgSectionOpen ? 'var(--accent)' : '';
+});
+
+function showImgProgress(show){
+  document.getElementById('img-upload-progress').style.display = show?'block':'none';
+}
+
+async function uploadFileToWorker(file){
+  showImgProgress(true);
+  try {
+    const form=new FormData(); form.append('image',file);
+    const res=await fetch(CONFIG.API_URL+'/upload',{method:'POST',body:form});
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.error||'Upload failed');
+    return data.url;
+  } finally { showImgProgress(false); }
+}
+
+async function validateUrlViaWorker(url){
+  showImgProgress(true);
+  try {
+    const res=await fetch(CONFIG.API_URL+'/validate-url',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({url})
+    });
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.error||'Invalid URL');
+    return data.url;
+  } finally { showImgProgress(false); }
+}
+
+document.getElementById('btn-img-file').addEventListener('click',()=>{
+  document.getElementById('img-file-input').click();
+});
+document.getElementById('img-file-input').addEventListener('change', async e=>{
+  const file=e.target.files[0]; if(!file) return;
+  if(!S.sel||S.selType!=='node'){toast(t('toastSelectNode'));return;}
+  try { setNodeImage(S.sel, await uploadFileToWorker(file)); toast('✓ '+t('toastImgUploaded')); }
+  catch(err){ toast('❌ '+err.message); }
+  e.target.value='';
+});
+
+document.getElementById('btn-img-url').addEventListener('click', async ()=>{
+  const url=document.getElementById('img-url-input').value.trim(); if(!url) return;
+  if(!S.sel||S.selType!=='node'){toast(t('toastSelectNode'));return;}
+  try {
+    setNodeImage(S.sel, await validateUrlViaWorker(url));
+    document.getElementById('img-url-input').value='';
+    toast('✓ '+t('toastImgAdded'));
+  } catch(err){ toast('❌ '+err.message); }
+});
+
+document.getElementById('btn-img-clipboard').addEventListener('click', async ()=>{
+  if(!S.sel||S.selType!=='node'){toast(t('toastSelectNode'));return;}
+  try {
+    const items=await navigator.clipboard.read();
+    for(const item of items){
+      const imgType=item.types.find(tp=>tp.startsWith('image/'));
+      if(imgType){
+        const blob=await item.getType(imgType);
+        const file=new File([blob],'clipboard.png',{type:imgType});
+        setNodeImage(S.sel, await uploadFileToWorker(file));
+        toast('✓ '+t('toastImgAdded')); return;
+      }
+    }
+    toast('❌ '+t('toastNoImgClipboard'));
+  } catch(err){ toast('❌ '+err.message); }
+});
+
+const MIN_NODE_W = CONFIG.MIN_NODE_WIDTH;
+const MAX_NODE_W = CONFIG.MAX_NODE_WIDTH;
 
 function grow(ta){
   // Reset to minimal to measure natural single-line width
@@ -702,7 +1097,7 @@ function addChild(pid){
   // Count existing children to determine angle
   const childCount = S.edges.filter(e=>e.from===pid).length;
   // Counter-clockwise: start at right (0°), step by 60° CCW
-  const RADIUS = 220;
+  const RADIUS = CONFIG.NODE_RADIUS;
   const startAngle = 0; // degrees, right side
   const stepAngle = -18; // CCW
   const angleDeg = startAngle + childCount * stepAngle;
@@ -772,7 +1167,7 @@ function mkEdge(from,to){
 }
 
 // Triangle base width (in world units) — fixed, not dependent on scale
-const TRI_BASE_W = 20;
+const TRI_BASE_W = CONFIG.TRIANGLE_WIDTH;
 
 function drawEdges(){
   edgesSvg.innerHTML='';
@@ -949,13 +1344,20 @@ function showPal(){
 function hidePal(){ palPanel.classList.remove('show'); };
 
 // ─── CTX MENU ─────────────────────────────────────────
-let ctxTgt=null;
-function showCtx(x,y,id){ ctxTgt=id; ctxMenu.style.display='block'; ctxMenu.style.left=x+'px'; ctxMenu.style.top=y+'px'; }
-function hideCtx(){ ctxMenu.style.display='none'; ctxTgt=null; }
-window.addEventListener('click',e=>{ if(!ctxMenu.contains(e.target)) hideCtx(); });
-document.getElementById('cm-child').addEventListener('click',()=>{ if(ctxTgt) addChild(ctxTgt); hideCtx(); });
-document.getElementById('cm-color').addEventListener('click',()=>{ if(ctxTgt){pickNode(ctxTgt);showPal();} hideCtx(); });
-document.getElementById('cm-del').addEventListener('click',()=>{ if(ctxTgt){pickNode(ctxTgt);delSel();} hideCtx(); });
+function hideCtx(){} // ctx-menu removed
+
+window.addEventListener('keydown', e=>{
+  if(isText()) return;
+
+  if(e.ctrlKey && e.key === 'c'){
+    if(S.sel) copyNode(S.sel);
+  }
+
+  if(e.ctrlKey && e.key === 'v'){
+    pasteNode();
+  }
+});
+
 
 // ─── ADD NODE BTN ─────────────────────────────────────
 document.getElementById('btn-add').addEventListener('click',()=>{
@@ -970,7 +1372,7 @@ function getData(projectName='mindmap'){
     name: projectName, // 🔥 нове поле
     nodes: Object.values(S.nodes).map(n=>({
       id:n.id,x:n.x,y:n.y,text:n.text,color:n.color,textColor:n.textColor||'#ffffff',
-      fontSize:n.fontSize||12, textAlign:n.textAlign||'center'
+      fontSize:n.fontSize||12, textAlign:n.textAlign||'center', imageUrl:n.imageUrl||null
     })),
     edges: S.edges,
     palette: S.palette,
@@ -1049,7 +1451,7 @@ if(data.name){
   }
 
   data.nodes.forEach(n=>{
-    S.nodes[n.id]={...n, w:110, h:38, fontSize:n.fontSize||12, textAlign:n.textAlign||'center'};
+    S.nodes[n.id]={...n, w:110, h:38, fontSize:n.fontSize||12, textAlign:n.textAlign||'center', imageUrl:n.imageUrl||null};
     buildEl(S.nodes[n.id]);
 
     requestAnimationFrame(()=>{
@@ -1211,14 +1613,15 @@ function toast(msg){
 
 // ─── INIT ─────────────────────────────────────────────
 renderSwatches();
-// Restore language before DOM manipulation
+// Restore language
 const savedLang = localStorage.getItem('mm_lang');
 if(savedLang && I18N[savedLang]){
   currentLang = savedLang;
   document.getElementById('lang-select').value = savedLang;
 } else {
-  currentLang = 'uk';
-  document.getElementById('lang-select').value = 'uk';
+  currentLang = 'en';
+  document.getElementById('lang-select').value = 'en';
+  localStorage.setItem('mm_lang', 'en');
 }
 requestAnimationFrame(()=>{
   applyLang(); // after full DOM ready
