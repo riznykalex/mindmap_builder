@@ -40,13 +40,14 @@
 
   /* ── TOOLBAR ── */
   #toolbar {
-    height: 52px;
+    min-height: 52px;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 5px;
-    padding: 0 12px;
+    padding: 6px 12px;
     flex-shrink: 0;
     z-index: 100;
   }
@@ -72,7 +73,7 @@
   }
   .btn:hover { background: var(--border); border-color: var(--accent); }
   .btn.danger:hover { border-color: var(--accent2); color: var(--accent2); }
-  #hint { margin-left: auto; font-size: 10px; color: var(--text-muted); font-family: 'Martian Mono', monospace; }
+  #hint { margin-left: auto; font-size: 10px; color: var(--text-muted); font-family: 'Martian Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex-shrink: 1; }
 
   .tb-pick-wrap { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); font-family: 'Martian Mono', monospace; }
   .tb-pick { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; background: none; padding: 2px; }
@@ -104,12 +105,13 @@
     cursor: grab;
     border: 2px solid transparent;
     transition: border-color .15s, box-shadow .15s;
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.35);
   }
   .node:active { cursor: grabbing; }
-  .node.sel { border-color: #fff !important; box-shadow: 0 0 0 3px rgba(255,255,255,.15); }
+  .node.sel { border-color: #fff !important; box-shadow: 0 0 0 3px rgba(255,255,255,.15), 0 6px 20px rgba(0,0,0,.5); }
 
   /* node image */
   .node-img {
@@ -123,13 +125,7 @@
 	  flex-shrink: 0;
     cursor: zoom-in;
   }
-  .node-img-clearfix::after {
-    content: ''; display: table; clear: both;
-  }
-  
-  .node-img-clearfix {
-  display: none;
-}
+
   
   .node-img-del {
     position: absolute; top: 4px; right: 4px;
@@ -141,10 +137,30 @@
   }
   .node:hover .node-img-del { display: flex; }
 
-.node-text {
-  flex: 1;
-  white-space: pre-wrap;
+
+
+.node-dup-btn {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  cursor: pointer;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity .15s;
+  pointer-events: auto;
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.6);
+  box-shadow: none;
 }
+.node:hover .node-dup-btn { opacity: 1; }
+.node-dup-btn:hover { color: #fff; background: rgba(255,255,255,0.15); }
 
 
   /* image panel in palette */
@@ -152,11 +168,6 @@
     flex-direction: column; gap: 7px; padding-top: 7px;
   }
   .img-row { display: flex; gap: 6px; align-items: center; }
-  .img-row input[type=text] {
-    flex: 1; background: var(--surface2); border: 1px solid var(--border);
-    color: var(--text); border-radius: 6px; padding: 5px 8px;
-    font-family: 'Martian Mono', monospace; font-size: 11px;
-  }
   .img-upload-btn {
     background: var(--surface2); border: 1px solid var(--border);
     color: var(--text); border-radius: 6px; padding: 5px 10px;
@@ -191,8 +202,9 @@
   #lightbox-close:hover { opacity: 1; }
 
   .node-text {
+    flex: 1;
     font-size: 12px; font-weight: 600; line-height: 1.4;
-    word-break: break-word; outline: none;
+    word-break: break-word; overflow-wrap: anywhere; outline: none;
     background: transparent; border: none;
     font-family: 'Syne', sans-serif;
     resize: none; overflow: hidden; min-height: 18px;
@@ -213,12 +225,14 @@
 
   /* +/− buttons */
   .node-actions {
-    position: absolute; right: -48px; top: 50%;
+    position: absolute; right: -42px; top: 50%;
     transform: translateY(-50%);
-    display: flex; flex-direction: column; gap: 3px;
+    display: flex; flex-direction: column; gap: 4px;
     opacity: 0; transition: opacity .15s; z-index: 20;
   }
-  .node:hover .node-actions { opacity: 1; }
+  
+  
+  .node:hover .node-actions { opacity: 0.85; }
   .node-btn {
     width: 20px; height: 20px; border-radius: 50%;
     border: 1px solid var(--border); background: var(--surface2);
@@ -287,12 +301,10 @@
   #zoom-info { position: fixed; bottom: 16px; right: 16px; font-family: 'Martian Mono', monospace; font-size: 11px; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; z-index: 200; }
   #autosave-ind { position: fixed; bottom: 16px; right: 80px; font-family: 'Martian Mono', monospace; font-size: 11px; color: #4ec9b0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; z-index: 200; opacity: 0; transition: opacity .4s; }
 
-  /* ── CTX MENU ── */
-  #ctx-menu { position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 5px; z-index: 500; display: none; min-width: 155px; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
-  #ctx-menu .mi { padding: 7px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-  #ctx-menu .mi:hover { background: var(--surface2); }
-  #ctx-menu .mi.danger { color: var(--accent2); }
+
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body>
 
@@ -320,6 +332,7 @@
   <button class="btn" id="btn-load">📂 Завантажити</button>
   <button class="btn" id="btn-export">⬇ PNG</button>
   <button class="btn" id="btn-export-txt">⬇ TXT</button>
+  
   <button class="btn danger" id="btn-clear">🗑 Очистити</button>
   <div class="sep"></div>
   <button id="btn-theme" title="Змінити тему">🌙</button>
@@ -408,12 +421,6 @@
         <span id="lbl-img-clipboard">З буферу</span>
       </button>
     </div>
-    <div class="img-row">
-      <input type="text" id="img-url-input" placeholder="https://…">
-      <button class="img-upload-btn primary" id="btn-img-url">
-        <span id="lbl-img-url">Додати URL</span>
-      </button>
-    </div>
   </div>
   <input type="file" id="img-file-input" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none">
 </div>
@@ -442,7 +449,7 @@ const I18N = {
     palAddSwatch: '+ До палітри', palFont: 'Шрифт:', palAlign: 'Вирівн.:',
     cmChild: '➕ Дочірній вузол', cmColor: '🎨 Колір', cmDel: '🗑 Видалити',
     autosave: '✓ автозбережено',
-    hint: '2×клік = вузол · ● = з\'єднати · Scroll = zoom · Пробіл+drag = pan · Del = видалити',
+    hint: '2×клік·вузол  ●·з\'єднати  Scroll·zoom  Пробіл+drag·pan  Del·видалити',
     noProject: '(без назви)', promptName: 'Назва проєкту:',
     defaultNode: 'Вузол', defaultRoot: 'Головна ідея',
     toastSaved: 'Збережено', toastLoaded: 'Завантажено ✓',
@@ -451,7 +458,7 @@ const I18N = {
     toastPng: 'Завантаження PNG...', toastJsonErr: 'Помилка JSON ❌',
     confirmClear: 'Очистити карту?',
     alignLeft: 'Ліво', alignCenter: 'По центру', alignRight: 'Право',
-    palImage: 'Зображення:', imgFile: 'Завантажити файл', imgClipboard: 'З буферу', imgUrl: 'Додати URL',
+    palImage: 'Зображення:', imgFile: 'Завантажити файл', imgClipboard: 'З буферу',
     toastSelectNode: 'Спочатку виберіть вузол', toastImgUploaded: 'Зображення завантажено', toastImgAdded: 'Зображення додано', toastNoImgClipboard: 'У буфері немає зображення',
     titleNodeColor: 'Колір вузла', titleTextColor: 'Колір тексту',
     btnChild: 'Дочірній вузол', btnDuplicate: 'Дублювати', cmDuplicate: '📄 Дублювати', cmCopy: '📋 Копіювати', cmPaste: '📋 Вставити',
@@ -465,7 +472,7 @@ const I18N = {
     palAddSwatch: '+ To palette', palFont: 'Font:', palAlign: 'Align:',
     cmChild: '➕ Child node', cmColor: '🎨 Color', cmDel: '🗑 Delete',
     autosave: '✓ autosaved',
-    hint: 'Dbl-click = node · ● = connect · Scroll = zoom · Space+drag = pan · Del = delete',
+    hint: 'Dbl-click·node  ●·connect  Scroll·zoom  Space+drag·pan  Del·delete',
     noProject: '(no name)', promptName: 'Project name:',
     defaultNode: 'Node', defaultRoot: 'Main idea',
     toastSaved: 'Saved', toastLoaded: 'Loaded ✓',
@@ -474,7 +481,7 @@ const I18N = {
     toastPng: 'Downloading PNG...', toastJsonErr: 'JSON error ❌',
     confirmClear: 'Clear the map?',
     alignLeft: 'Left', alignCenter: 'Center', alignRight: 'Right',
-    palImage: 'Image:', imgFile: 'Upload file', imgClipboard: 'From clipboard', imgUrl: 'Add URL',
+    palImage: 'Image:', imgFile: 'Upload file', imgClipboard: 'From clipboard',
     toastSelectNode: 'Select a node first', toastImgUploaded: 'Image uploaded', toastImgAdded: 'Image added', toastNoImgClipboard: 'No image in clipboard',
     titleNodeColor: 'Node color', titleTextColor: 'Text color',
     btnChild: 'Child node', btnDuplicate: 'Duplicate', cmDuplicate: '📄 Duplicate', cmCopy: '📋 Copy', cmPaste: '📋 Paste',
@@ -488,7 +495,7 @@ const I18N = {
     palAddSwatch: '+ Palette', palFont: 'Police:', palAlign: 'Aligner:',
     cmChild: '➕ Nœud enfant', cmColor: '🎨 Couleur', cmDel: '🗑 Supprimer',
     autosave: '✓ sauvegardé',
-    hint: 'Dbl-clic = nœud · ● = relier · Scroll = zoom · Espace+drag = pan · Suppr = effacer',
+    hint: 'Dbl-clic·nœud  ●·relier  Scroll·zoom  Espace+drag·pan  Suppr·effacer',
     noProject: '(sans nom)', promptName: 'Nom du projet:',
     defaultNode: 'Nœud', defaultRoot: 'Idée principale',
     toastSaved: 'Enregistré', toastLoaded: 'Chargé ✓',
@@ -497,7 +504,7 @@ const I18N = {
     toastPng: 'Téléchargement PNG...', toastJsonErr: 'Erreur JSON ❌',
     confirmClear: 'Effacer la carte?',
     alignLeft: 'Gauche', alignCenter: 'Centrer', alignRight: 'Droite',
-    palImage: 'Image:', imgFile: 'Télécharger', imgClipboard: 'Presse-papiers', imgUrl: 'Ajouter URL',
+    palImage: 'Image:', imgFile: 'Télécharger', imgClipboard: 'Presse-papiers',
     toastSelectNode: 'Sélectionnez un nœud', toastImgUploaded: 'Image téléchargée', toastImgAdded: 'Image ajoutée', toastNoImgClipboard: 'Pas d image dans le presse-papiers',
     titleNodeColor: 'Couleur du nœud', titleTextColor: 'Couleur du texte',
     btnChild: 'Nœud enfant', btnDuplicate: 'Dupliquer', cmDuplicate: '📄 Dupliquer', cmCopy: '📋 Copier', cmPaste: '📋 Coller',
@@ -511,7 +518,7 @@ const I18N = {
     palAddSwatch: '+ Paleta', palFont: 'Fuente:', palAlign: 'Alinear:',
     cmChild: '➕ Nodo hijo', cmColor: '🎨 Color', cmDel: '🗑 Eliminar',
     autosave: '✓ guardado auto',
-    hint: 'Doble clic = nodo · ● = conectar · Scroll = zoom · Espacio+drag = pan · Supr = eliminar',
+    hint: 'Dbl-clic·nodo  ●·conectar  Scroll·zoom  Espacio+drag·pan  Supr·eliminar',
     noProject: '(sin nombre)', promptName: 'Nombre del proyecto:',
     defaultNode: 'Nodo', defaultRoot: 'Idea principal',
     toastSaved: 'Guardado', toastLoaded: 'Cargado ✓',
@@ -520,7 +527,7 @@ const I18N = {
     toastPng: 'Descargando PNG...', toastJsonErr: 'Error JSON ❌',
     confirmClear: '¿Limpiar el mapa?',
     alignLeft: 'Izquierda', alignCenter: 'Centrar', alignRight: 'Derecha',
-    palImage: 'Imagen:', imgFile: 'Subir archivo', imgClipboard: 'Portapapeles', imgUrl: 'Añadir URL',
+    palImage: 'Imagen:', imgFile: 'Subir archivo', imgClipboard: 'Portapapeles',
     toastSelectNode: 'Seleccione un nodo', toastImgUploaded: 'Imagen subida', toastImgAdded: 'Imagen añadida', toastNoImgClipboard: 'No hay imagen en el portapapeles',
     titleNodeColor: 'Color del nodo', titleTextColor: 'Color del texto',
     btnChild: 'Nodo hijo', btnDuplicate: 'Duplicar', cmDuplicate: '📄 Duplicar', cmCopy: '📋 Copiar', cmPaste: '📋 Pegar',
@@ -534,7 +541,7 @@ const I18N = {
     palAddSwatch: '+ Palette', palFont: 'Schrift:', palAlign: 'Ausricht.:',
     cmChild: '➕ Kindknoten', cmColor: '🎨 Farbe', cmDel: '🗑 Löschen',
     autosave: '✓ autospeichern',
-    hint: 'Doppelklick = Knoten · ● = verbinden · Scroll = Zoom · Leertaste+ziehen = verschieben · Entf = löschen',
+    hint: 'DblKlick·Knoten  ●·verbinden  Scroll·Zoom  Leer+ziehen·pan  Entf·löschen',
     noProject: '(kein Name)', promptName: 'Projektname:',
     defaultNode: 'Knoten', defaultRoot: 'Hauptidee',
     toastSaved: 'Gespeichert', toastLoaded: 'Geladen ✓',
@@ -543,7 +550,7 @@ const I18N = {
     toastPng: 'PNG herunterladen...', toastJsonErr: 'JSON-Fehler ❌',
     confirmClear: 'Karte leeren?',
     alignLeft: 'Links', alignCenter: 'Mitte', alignRight: 'Rechts',
-    palImage: 'Bild:', imgFile: 'Datei hochladen', imgClipboard: 'Zwischenablage', imgUrl: 'URL hinzufügen',
+    palImage: 'Bild:', imgFile: 'Datei hochladen', imgClipboard: 'Zwischenablage',
     toastSelectNode: 'Knoten auswählen', toastImgUploaded: 'Bild hochgeladen', toastImgAdded: 'Bild hinzugefügt', toastNoImgClipboard: 'Kein Bild in der Zwischenablage',
     titleNodeColor: 'Knotenfarbe', titleTextColor: 'Textfarbe',
     btnChild: 'Kindknoten', btnDuplicate: 'Duplizieren', cmDuplicate: '📄 Duplizieren', cmCopy: '📋 Kopieren', cmPaste: '📋 Einfügen',
@@ -566,7 +573,7 @@ const I18N = {
     toastPng: '正在下载 PNG...', toastJsonErr: 'JSON 错误 ❌',
     confirmClear: '清空地图？',
     alignLeft: '左对齐', alignCenter: '居中', alignRight: '右对齐',
-    palImage: '图片:', imgFile: '上传文件', imgClipboard: '剪贴板', imgUrl: '添加链接',
+    palImage: '图片:', imgFile: '上传文件', imgClipboard: '剪贴板',
     toastSelectNode: '请先选择节点', toastImgUploaded: '图片已上传', toastImgAdded: '图片已添加', toastNoImgClipboard: '剪贴板中没有图片',
     titleNodeColor: '节点颜色', titleTextColor: '文字颜色',
     btnChild: '子节点', btnDuplicate: '复制节点', cmDuplicate: '📄 复制节点', cmCopy: '📋 复制', cmPaste: '📋 粘贴',
@@ -589,7 +596,7 @@ const I18N = {
     toastPng: 'PNG ダウンロード中...', toastJsonErr: 'JSON エラー ❌',
     confirmClear: 'マップを消去しますか？',
     alignLeft: '左揃え', alignCenter: '中央揃え', alignRight: '右揃え',
-    palImage: '画像:', imgFile: 'ファイルをアップロード', imgClipboard: 'クリップボード', imgUrl: 'URLを追加',
+    palImage: '画像:', imgFile: 'ファイルをアップロード', imgClipboard: 'クリップボード',
     toastSelectNode: 'ノードを選択してください', toastImgUploaded: '画像をアップロードしました', toastImgAdded: '画像を追加しました', toastNoImgClipboard: 'クリップボードに画像がありません',
     titleNodeColor: 'ノードの色', titleTextColor: 'テキストの色',
     btnChild: '子ノード', btnDuplicate: '複製', cmDuplicate: '📄 複製', cmCopy: '📋 コピー', cmPaste: '📋 貼り付け',
@@ -638,16 +645,15 @@ function applyLang(){
   });
   // ctx menu
   // node button tooltips (update all existing nodes)
-  document.querySelectorAll('.node-btn.dup').forEach(b => { b.title = L.btnDuplicate; });
+  document.querySelectorAll('.node-dup-btn').forEach(b => { b.title = L.btnDuplicate; });
   document.querySelectorAll('.node-btn.minus').forEach(b => { b.title = L.btnDel; });
-  document.querySelectorAll('.node-btn:not(.dup):not(.minus)').forEach(b => { b.title = L.btnChild; });
+  document.querySelectorAll('.node-btn:not(.minus)').forEach(b => { b.title = L.btnChild; });
   // autosave indicator
   set('autosave-ind', L.autosave);
   // image section
   set('lbl-pal-image', L.palImage);
   set('lbl-img-file', L.imgFile);
   set('lbl-img-clipboard', L.imgClipboard);
-  set('lbl-img-url', L.imgUrl);
   // project name placeholder if empty
   const pn = document.getElementById('project-name-tb');
   if(pn && !S_projectName) pn.textContent = L.noProject;
@@ -670,6 +676,70 @@ const S = {
   bg: '#0f0f13',
 };
 let nid=0, eid=0;
+
+// ─── UNDO / REDO ──────────────────────────────────────
+const undoStack = [];
+const redoStack = [];
+const UNDO_LIMIT = 50;
+let _undoPaused = false;
+
+function snapshotState(){
+  return JSON.stringify({
+    nodes: Object.values(S.nodes).map(n=>({...n})),
+    edges: S.edges.map(e=>({...e})),
+    palette: [...S.palette],
+    bg: S.bg,
+    nid, eid
+  });
+}
+
+function pushUndo(){
+  if(_undoPaused) return;
+  undoStack.push(snapshotState());
+  if(undoStack.length > UNDO_LIMIT) undoStack.shift();
+  redoStack.length = 0;
+}
+
+function restoreSnapshot(snap){
+  _undoPaused = true;
+  const data = JSON.parse(snap);
+  world.innerHTML = '';
+  edgesSvg.innerHTML = '';
+  Object.keys(S.nodes).forEach(k => delete S.nodes[k]);
+  S.edges.length = 0;
+  S.sel = null; S.selType = null;
+  if(data.palette) S.palette = data.palette;
+  if(data.bg){ S.bg = data.bg; canvas.style.background = data.bg; document.getElementById('bg-color-input').value = data.bg; }
+  nid = data.nid || 0; eid = data.eid || 0;
+  data.nodes.forEach(n => {
+    S.nodes[n.id] = {...n};
+    buildEl(S.nodes[n.id]);
+  });
+  S.edges = data.edges || [];
+  requestAnimationFrame(()=>{
+    Object.values(S.nodes).forEach(n => {
+      const el = document.getElementById(n.id);
+      if(el){ const ta = el.querySelector('.node-text'); if(ta) grow(ta); n.w = el.offsetWidth; n.h = el.offsetHeight; }
+    });
+    drawEdges();
+    hidePal();
+    _undoPaused = false;
+  });
+}
+
+function undo(){
+  if(!undoStack.length) return;
+  redoStack.push(snapshotState());
+  restoreSnapshot(undoStack.pop());
+  toast('↩ Undo');
+}
+
+function redo(){
+  if(!redoStack.length) return;
+  undoStack.push(snapshotState());
+  restoreSnapshot(redoStack.pop());
+  toast('↪ Redo');
+}
 
 const world    = document.getElementById('world');
 const edgesSvg = document.getElementById('edges');
@@ -750,17 +820,15 @@ function duplicateNode(id){
   const parentId = getParentId(id);
   const newId = duplicateSubtree(id, parentId);
   if(!newId) return;
-  // два rAF: перший — браузер малює DOM, другий — розміри вже відомі
-  requestAnimationFrame(()=>{
-    requestAnimationFrame(()=>{
-      Object.values(S.nodes).forEach(n=>{
-        const el=document.getElementById(n.id);
-        if(el){ n.w=el.offsetWidth; n.h=el.offsetHeight; }
-      });
-      drawEdges();
-      pickNode(newId);
+  // чекаємо поки браузер відмалює всі нові вузли, потім оновлюємо розміри і ребра
+  setTimeout(()=>{
+    Object.values(S.nodes).forEach(n=>{
+      const el=document.getElementById(n.id);
+      if(el){ n.w=el.offsetWidth; n.h=el.offsetHeight; }
     });
-  });
+    drawEdges();
+    pickNode(newId);
+  }, 50);
 }
 
 
@@ -784,6 +852,8 @@ let panning=false, panSt=null, space=false;
 window.addEventListener('keydown', e=>{
   if(e.code==='Space'&&!isText()){space=true;e.preventDefault();}
   if(e.key==='Delete'&&!isText()) delSel();
+  if(e.ctrlKey && e.key==='z' && !e.shiftKey && !isText()){ e.preventDefault(); undo(); }
+  if(e.ctrlKey && (e.key==='y' || (e.key==='z' && e.shiftKey)) && !isText()){ e.preventDefault(); redo(); }
 });
 window.addEventListener('keyup', e=>{ if(e.code==='Space'){space=false;canvas.classList.remove('panning');} });
 canvas.addEventListener('mousedown', e=>{
@@ -815,6 +885,7 @@ document.getElementById('bg-color-input').addEventListener('input', e=>{
 // ─── NODE ─────────────────────────────────────────────
 function mkNode(wx,wy,text=null,color='#7c6af7',parentId=null,textColor='#ffffff',fontSize=12,textAlign='center',imageUrl=null,silent=false){
   if(text===null) text=t('defaultNode');
+  if(!silent) pushUndo();
   const id='n'+(++nid);
   const n={id,x:wx,y:wy,text,color,textColor,fontSize,textAlign,imageUrl,w:110,h:38};
   S.nodes[id]=n;
@@ -833,6 +904,12 @@ function mkNode(wx,wy,text=null,color='#7c6af7',parentId=null,textColor='#ffffff
   return id;
 }
 
+
+
+
+
+
+
 function buildEl(n){
   const el=document.createElement('div');
   el.className='node'; el.id=n.id;
@@ -843,7 +920,12 @@ function buildEl(n){
   ta.style.color=n.textColor||'#ffffff';
   ta.style.fontSize=(n.fontSize||12)+'px';
   ta.style.textAlign=n.textAlign||'center';
-  ta.addEventListener('input',()=>{ n.text=ta.value; grow(ta); n.w=el.offsetWidth; n.h=el.offsetHeight; drawEdges(); });
+  let _textUndoTimer = null;
+  ta.addEventListener('input',()=>{
+    n.text=ta.value; grow(ta); n.w=el.offsetWidth; n.h=el.offsetHeight; drawEdges();
+    clearTimeout(_textUndoTimer);
+    _textUndoTimer = setTimeout(()=>{ pushUndo(); }, 600);
+  });
   ta.addEventListener('mousedown',e=>e.stopPropagation());
   ta.addEventListener('focus',()=>pickNode(n.id));
 
@@ -851,22 +933,40 @@ function buildEl(n){
   dot.className='node-dot'; dot.style.background=n.color;
   dot.addEventListener('mousedown',e=>{ e.stopPropagation(); beginConnect(n.id,e); });
 
-  const acts=document.createElement('div'); acts.className='node-actions';
-  const plus=document.createElement('div'); plus.className='node-btn'; plus.title=t('btnChild'); plus.textContent='+';
-  plus.addEventListener('mousedown',e=>{ e.stopPropagation(); addChild(n.id); });
-  const minus=document.createElement('div'); minus.className='node-btn minus'; minus.title=t('btnDel'); minus.textContent='−';
-  minus.addEventListener('mousedown',e=>{ e.stopPropagation(); pickNode(n.id); delSel(); });
-  const dup=document.createElement('div'); dup.className='node-btn dup'; dup.title=t('btnDuplicate'); dup.textContent='⧉';
-  dup.addEventListener('mousedown',e=>{ e.stopPropagation(); duplicateNode(n.id); });
-  acts.appendChild(plus); acts.appendChild(dup); acts.appendChild(minus);
+// Кнопка дублювання — всередині вузла, правий нижній кут
+const dup = document.createElement('div'); 
+dup.className = 'node-dup-btn';
+dup.title = t('btnDuplicate'); 
+dup.textContent = '⧉';
+dup.addEventListener('mousedown', e => { 
+  e.stopPropagation(); 
+  duplicateNode(n.id); 
+});
 
-  // image above text (float left)
+el.appendChild(dup);
+
+// Actions праворуч (тільки + і −)
+const acts = document.createElement('div'); 
+acts.className = 'node-actions';
+const plus = document.createElement('div'); 
+plus.className = 'node-btn'; 
+plus.title = t('btnChild'); 
+plus.textContent = '+';
+plus.addEventListener('mousedown', e => { e.stopPropagation(); addChild(n.id); });
+
+const minus = document.createElement('div'); 
+minus.className = 'node-btn minus'; 
+minus.title = t('btnDel'); 
+minus.textContent = '−';
+minus.addEventListener('mousedown', e => { e.stopPropagation(); pickNode(n.id); delSel(); });
+
+acts.appendChild(plus);
+acts.appendChild(minus);
+
+ // image above text
   if(n.imageUrl) el.appendChild(buildImgEl(n.id, n.imageUrl));
   el.appendChild(ta);
-  // clearfix for float
-  const cf = document.createElement('div');
-  cf.className = 'node-img-clearfix';
-  el.appendChild(cf); el.appendChild(dot); el.appendChild(acts);
+  el.appendChild(dot); el.appendChild(acts);
   world.appendChild(el);
 
   draggable(el,n.id);
@@ -945,6 +1045,10 @@ function buildImgEl(nodeId, url){
   img.className = 'node-img'; img.src = url; img.draggable = false;
   img.addEventListener('mousedown', e => e.stopPropagation());
   img.addEventListener('click', e => { e.stopPropagation(); openLightbox(url); });
+  img.addEventListener('load', () => {
+    const n = S.nodes[nodeId];
+    if(n){ n._imgNaturalW = img.naturalWidth; n._imgNaturalH = img.naturalHeight; }
+  });
 
   const del = document.createElement('div');
   del.className = 'node-img-del'; del.textContent = '×';
@@ -952,7 +1056,7 @@ function buildImgEl(nodeId, url){
 
   const wrap = document.createElement('div');
   wrap.className = 'node-img-wrap';
-wrap.style.cssText = 'position:relative;';
+  wrap.style.cssText = 'position:relative;';
   wrap.appendChild(img);
   wrap.appendChild(del);
   return wrap;
@@ -960,6 +1064,7 @@ wrap.style.cssText = 'position:relative;';
 
 function setNodeImage(id, url){
   const n=S.nodes[id]; if(!n) return;
+  pushUndo();
   n.imageUrl = url;
   const el=document.getElementById(id);
   el.querySelectorAll('.node-img-wrap').forEach(d=>d.remove());
@@ -1016,19 +1121,6 @@ async function uploadFileToWorker(file){
   } finally { showImgProgress(false); }
 }
 
-async function validateUrlViaWorker(url){
-  showImgProgress(true);
-  try {
-    const res=await fetch(CONFIG.API_URL+'/validate-url',{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({url})
-    });
-    const data=await res.json();
-    if(!res.ok) throw new Error(data.error||'Invalid URL');
-    return data.url;
-  } finally { showImgProgress(false); }
-}
-
 document.getElementById('btn-img-file').addEventListener('click',()=>{
   document.getElementById('img-file-input').click();
 });
@@ -1038,16 +1130,6 @@ document.getElementById('img-file-input').addEventListener('change', async e=>{
   try { setNodeImage(S.sel, await uploadFileToWorker(file)); toast('✓ '+t('toastImgUploaded')); }
   catch(err){ toast('❌ '+err.message); }
   e.target.value='';
-});
-
-document.getElementById('btn-img-url').addEventListener('click', async ()=>{
-  const url=document.getElementById('img-url-input').value.trim(); if(!url) return;
-  if(!S.sel||S.selType!=='node'){toast(t('toastSelectNode'));return;}
-  try {
-    setNodeImage(S.sel, await validateUrlViaWorker(url));
-    document.getElementById('img-url-input').value='';
-    toast('✓ '+t('toastImgAdded'));
-  } catch(err){ toast('❌ '+err.message); }
 });
 
 document.getElementById('btn-img-clipboard').addEventListener('click', async ()=>{
@@ -1111,6 +1193,7 @@ function addChild(pid){
 
 function setNodeAppearance(id,color,textColor){
   const n=S.nodes[id]; if(!n)return;
+  pushUndo();
   if(color)     n.color=color;
   if(textColor) n.textColor=textColor;
   const el=document.getElementById(id);
@@ -1162,6 +1245,7 @@ canvas.addEventListener('dblclick', e=>{
 // ─── EDGES — GREY TRIANGLES BEHIND NODES ──────────────
 function mkEdge(from,to){
   if(S.edges.find(e=>(e.from===from&&e.to===to)||(e.from===to&&e.to===from))) return;
+  pushUndo();
   S.edges.push({id:'e'+(++eid),from,to});
   drawEdges();
 }
@@ -1249,6 +1333,7 @@ function beginConnect(fromId,e){
 // ─── DELETE ───────────────────────────────────────────
 function delSel(){
   if(!S.sel) return;
+  pushUndo();
   if(S.selType==='node'){
     const id=S.sel;
     document.getElementById(id)?.remove();
@@ -1285,6 +1370,7 @@ function renderSwatches(){
 
 function setNodeTypography(id, fontSize, textAlign){
   const n=S.nodes[id]; if(!n) return;
+  pushUndo();
   if(fontSize)  n.fontSize=fontSize;
   if(textAlign) n.textAlign=textAlign;
   const el=document.getElementById(id);
@@ -1492,101 +1578,198 @@ document.getElementById('project-name-tb').addEventListener('click', ()=>{
 });
 
 
-// ─── EXPORT PNG ───────────────────────────────────────
-document.getElementById('btn-export').addEventListener('click',()=>{
-  const nodes=Object.values(S.nodes); if(!nodes.length){toast(t('toastNoNodes'));return;}
-  const pad=60;
-  const minX=Math.min(...nodes.map(n=>n.x))-pad, minY=Math.min(...nodes.map(n=>n.y))-pad;
-  const maxX=Math.max(...nodes.map(n=>n.x+n.w))+pad, maxY=Math.max(...nodes.map(n=>n.y+n.h))+pad;
-  const W=maxX-minX, H=maxY-minY;
 
-  // Unique gradient defs
-  let defs='<defs>';
-  nodes.forEach(n=>{
-    const light=lighten(n.color,0.30);
-    defs+=`<linearGradient id="g${n.id}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${n.color}"/><stop offset="100%" stop-color="${light}"/></linearGradient>`;
-  });
-  defs+='</defs>';
 
-  let svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">${defs}<rect width="${W}" height="${H}" fill="${S.bg}"/>`;
-
-  // Triangles first (behind nodes)
-  for(const edge of S.edges){
-    const a=S.nodes[edge.from],b=S.nodes[edge.to]; if(!a||!b) continue;
-    const acx=a.x+a.w/2-minX, acy=a.y+a.h/2-minY;
-    const bcx=b.x+b.w/2-minX, bcy=b.y+b.h/2-minY;
-    const dx=bcx-acx,dy=bcy-acy,len=Math.sqrt(dx*dx+dy*dy)||1;
-    const ux=dx/len,uy=dy/len,px=-uy,py=ux;
-    const hw=TRI_BASE_W/2;
-    const b1x=acx+px*hw,b1y=acy+py*hw;
-    const b2x=acx-px*hw,b2y=acy-py*hw;
-    // tip near child border
-    const col_b=b; const tipA=attachEllipseExport(col_b,a.x+a.w/2,a.y+a.h/2,minX,minY);
-    svg+=`<path d="M${b1x},${b1y} L${tipA.x},${tipA.y} L${b2x},${b2y} Z" fill="rgba(140,140,160,0.28)"/>`;
+// ─── EXPORT PNG — ТЕКСТ В МЕЖАХ ВУЗЛА (виправлений) ─────────────────────
+document.getElementById('btn-export').addEventListener('click', async () => {
+  const nodes = Object.values(S.nodes);
+  if (!nodes.length) {
+    toast(t('toastNoNodes'));
+    return;
   }
-  // Nodes on top
-  for(const n of nodes){
-    const nx=n.x-minX,ny=n.y-minY,w=n.w,h=n.h;
-    const tc=n.textColor||'#ffffff';
-    const fs=n.fontSize||12;
-    const ta=n.textAlign||'center';
-    const textX = ta==='center' ? nx+w/2 : ta==='right' ? nx+w-12 : nx+12;
+
+  toast(t('toastPng'));
+
+  const pad = 60;
+  const minX = Math.min(...nodes.map(n => n.x)) - pad;
+  const minY = Math.min(...nodes.map(n => n.y)) - pad;
+  const maxX = Math.max(...nodes.map(n => n.x + (n.w || 220))) + pad;
+  const maxY = Math.max(...nodes.map(n => n.y + (n.h || 120))) + pad;
+
+  const W = maxX - minX;
+  const H = maxY - minY;
+
+  // Конвертуємо зображення в base64 (підтримка і data:, і https:// від worker'а)
+  const imgBase64 = {};
+  await Promise.all(nodes.filter(n => n.imageUrl).map(async n => {
+    try {
+      if (n.imageUrl.startsWith('data:')) {
+        imgBase64[n.id] = n.imageUrl; // вже base64 — використовуємо напряму
+      } else {
+        const res = await fetch(n.imageUrl);
+        const blob = await res.blob();
+        imgBase64[n.id] = await new Promise(resolve => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result);
+          r.readAsDataURL(blob);
+        });
+      }
+    } catch(e) {
+      console.warn('Image export failed:', n.imageUrl);
+    }
+  }));
+
+  let defs = '<defs>';
+  nodes.forEach(n => {
+    const light = lighten(n.color, 0.30);
+    defs += `<linearGradient id="g${n.id}" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="${n.color}"/>
+      <stop offset="100%" stop-color="${light}"/>
+    </linearGradient>`;
+  });
+  defs += '</defs>';
+
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
+    ${defs}
+    <rect width="${W}" height="${H}" fill="${S.bg}"/>`;
+
+  // Трикутники
+  for (const edge of S.edges) {
+    const a = S.nodes[edge.from], b = S.nodes[edge.to];
+    if (!a || !b) continue;
+    const acx = a.x + a.w/2 - minX, acy = a.y + a.h/2 - minY;
+    const bcx = b.x + b.w/2 - minX, bcy = b.y + b.h/2 - minY;
+    const dx = bcx - acx, dy = bcy - acy;
+    const len = Math.sqrt(dx*dx + dy*dy) || 1;
+    const px = -dy/len, py = dx/len;
+    const hw = TRI_BASE_W / 2;
+    const b1x = acx + px*hw, b1y = acy + py*hw;
+    const b2x = acx - px*hw, b2y = acy - py*hw;
+    const tipA = attachEllipseExport(b, a.x + a.w/2, a.y + a.h/2, minX, minY);
+    svg += `<path d="M${b1x},${b1y} L${tipA.x},${tipA.y} L${b2x},${b2y} Z" fill="rgba(140,140,160,0.28)"/>`;
+  }
+
+  // Вузли
+  for (const n of nodes) {
+    const nx = n.x - minX, ny = n.y - minY;
+    const fs = n.fontSize || 12;
+    const ta = n.textAlign || 'center';
+    const tc = n.textColor || '#ffffff';
+    const PAD = 10;
+    const lineH = fs * 1.45;
+
+    // Розбивка тексту по рядках з word-wrap
+    const rawLines = n.text.split('\n');
+    const w = n.w || 120;
+    const charsPerLine = Math.max(5, Math.floor((w - PAD*2) / (fs * 0.58)));
+    const lines = [];
+    rawLines.forEach(raw => {
+      if (raw.length <= charsPerLine) { lines.push(raw); return; }
+      const words = raw.split(' ');
+      let cur = '';
+      words.forEach(word => {
+        const candidate = cur ? cur + ' ' + word : word;
+        if (candidate.length > charsPerLine && cur) { lines.push(cur); cur = word; }
+        else cur = candidate;
+      });
+      if (cur) lines.push(cur);
+    });
+
+    // Висота: реальна з DOM або рахуємо самі
+    const IMG_DISPLAY_H = 80;   // висота у вузлі на екрані
+    const IMG_EXPORT_H  = 40;   // ×0.5 для компактного експорту
+
+    // Пропорційна ширина зображення для експорту
+    let imgExportW = w - 8; // fallback
+    if (imgBase64[n.id] && n._imgNaturalW && n._imgNaturalH) {
+      const ratio = n._imgNaturalW / n._imgNaturalH;
+      imgExportW = Math.min(w - 8, Math.round(IMG_EXPORT_H * ratio));
+    }
+
+    const imgH = imgBase64[n.id] ? IMG_EXPORT_H : 0;
+    const textBlockH = lines.length * lineH;
+    const calcH = PAD + imgH + (imgH ? PAD/2 : 0) + textBlockH + PAD;
+    const h = Math.max(n.h || 44, calcH);
+
+    svg += `<rect x="${nx}" y="${ny}" width="${w}" height="${h}" rx="10"
+      fill="url(#g${n.id})" stroke="${n.color}" stroke-width="2"/>`;
+
+    let curY = ny + PAD;
+
+    // Зображення
+    if(imgBase64[n.id]){
+      const ix = nx + Math.round((w - imgExportW) / 2); // центруємо горизонтально
+      svg += `<image href="${imgBase64[n.id]}" x="${ix}" y="${curY}"
+        width="${imgExportW}" height="${imgH}" preserveAspectRatio="xMidYMid meet"/>`;
+      curY += imgH + PAD/2;
+    }
+
+    // Текст
+    const textX = ta==='center' ? nx+w/2 : ta==='right' ? nx+w-PAD : nx+PAD;
     const anchor = ta==='center' ? 'middle' : ta==='right' ? 'end' : 'start';
-    svg+=`<rect x="${nx}" y="${ny}" width="${w}" height="${h}" rx="10" fill="url(#g${n.id})" stroke="${n.color}" stroke-width="1.5"/>`;
-    n.text.split('\n').forEach((ln,i)=>{
-      svg+=`<text x="${textX}" y="${ny+fs+8+i*(fs+4)}" font-family="sans-serif" font-size="${fs}" font-weight="600" fill="${tc}" text-anchor="${anchor}">${ln.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</text>`;
+    curY += fs; // перша базова лінія
+    lines.forEach((line, i) => {
+      const esc = line.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      svg += `<text x="${textX}" y="${curY + i*lineH}"
+        font-family="system-ui,sans-serif" font-size="${fs}" font-weight="600"
+        fill="${tc}" text-anchor="${anchor}">${esc}</text>`;
     });
   }
-  svg+='</svg>';
 
-  const blob=new Blob([svg],{type:'image/svg+xml'});
-  const url=URL.createObjectURL(blob);
-  const img=new Image();
-  img.onload=()=>{
-    const c=document.createElement('canvas'); c.width=W*2; c.height=H*2;
-    const ctx=c.getContext('2d'); ctx.scale(2,2); ctx.drawImage(img,0,0);
+  svg += '</svg>';
+
+  const blob = new Blob([svg], {type: 'image/svg+xml'});
+  const url = URL.createObjectURL(blob);
+  const img = new Image();
+
+  img.onload = () => {
+    const c = document.createElement('canvas');
+    c.width = W * 2; c.height = H * 2;
+    const ctx = c.getContext('2d');
+    ctx.scale(2, 2);
+    ctx.drawImage(img, 0, 0);
+    c.toBlob(bl => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(bl);
+      a.download = (S_projectName || 'mindmap') + '.png';
+      a.click();
+    }, 'image/png', 0.92);
     URL.revokeObjectURL(url);
-    c.toBlob(bl=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(bl); a.download=(S_projectName||'mindmap')+'.png'; a.click(); });
   };
-  img.src=url; toast(t('toastPng'));
-});
 
-function attachEllipseExport(n, fromX, fromY, offX, offY){
-  const cx=n.x+n.w/2-offX, cy=n.y+n.h/2-offY;
-  const dx=(fromX-offX)-cx, dy=(fromY-offY)-cy;
-  const len=Math.sqrt(dx*dx+dy*dy)||1;
-  const rx=n.w/2+1, ry=n.h/2+1;
-  const t=1/Math.sqrt((dx/len)*(dx/len)/(rx*rx)+(dy/len)*(dy/len)/(ry*ry));
-  return { x:cx+(dx/len)*t, y:cy+(dy/len)*t };
-}
+  img.src = url;
+  toast(t('toastPng'));
+  });
 
-function exportTXT(){
+// Helper для екранування HTML в тексті
+// ─── EXPORT TXT ───────────────────────────────────────
+document.getElementById('btn-export-txt').addEventListener('click', () => {
   const nodes = S.nodes;
   const edges = S.edges;
+  if (!Object.keys(nodes).length) { toast(t('toastNoNodes')); return; }
 
   const children = {};
   Object.keys(nodes).forEach(id => children[id] = []);
-  edges.forEach(e=>{ children[e.from].push(e.to); });
+  edges.forEach(e => { if(children[e.from] !== undefined) children[e.from].push(e.to); });
 
-  const hasParent = new Set(edges.map(e=>e.to));
+  const hasParent = new Set(edges.map(e => e.to));
   const roots = Object.keys(nodes).filter(id => !hasParent.has(id));
 
-  function walk(id, prefix, visited=new Set()){
-    if(visited.has(id)) return (prefix ? prefix+' ' : '') + nodes[id].text + ' (↺)\n';
+  function walk(id, prefix, visited = new Set()) {
+    if (visited.has(id)) return (prefix ? prefix + ' ' : '') + nodes[id].text + ' (↺)\n';
     visited.add(id);
-    let str = (prefix ? prefix+' ' : '') + nodes[id].text + '\n';
-    children[id].forEach((ch, i)=>{
-      const childPrefix = prefix ? prefix+'.'+(i+1) : String(i+1);
+    let str = (prefix ? prefix + ' ' : '') + nodes[id].text + '\n';
+    (children[id] || []).forEach((ch, i) => {
+      const childPrefix = prefix ? prefix + '.' + (i+1) : String(i+1);
       str += walk(ch, childPrefix, new Set(visited));
     });
     return str;
   }
 
   let result = '';
-  roots.forEach(r=>{
-    // root = title (no number), its children start at 1
+  roots.forEach(r => {
     result += nodes[r].text + '\n\n';
-    children[r].forEach((ch, i)=>{
+    (children[r] || []).forEach((ch, i) => {
       result += walk(ch, String(i+1));
     });
     result += '\n';
@@ -1598,15 +1781,48 @@ function exportTXT(){
   a.download = (S_projectName || 'mindmap') + '.txt';
   a.click();
   toast(t('toastExportTxt'));
+});
+
+function escapeHtml(unsafe) {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;")
+    .replace(/\n/g, '<br>');
 }
 
-document.getElementById('btn-export-txt').addEventListener('click', exportTXT);
+// ─── Helper для розрахунку точки приєднання трикутника (для експорту) ───
+function attachEllipseExport(n, fromX, fromY, offX, offY) {
+  if (!n) return { x: fromX - offX, y: fromY - offY };
+
+  const cx = n.x + (n.w || 110)/2 - offX;
+  const cy = n.y + (n.h || 38)/2 - offY;
+  
+  const dx = (fromX - offX) - cx;
+  const dy = (fromY - offY) - cy;
+  
+  const len = Math.sqrt(dx*dx + dy*dy) || 1;
+  const rx = (n.w || 110)/2 + 2;
+  const ry = (n.h || 38)/2 + 2;
+
+  const t = 1 / Math.sqrt(
+    (dx/len)*(dx/len)/(rx*rx) + 
+    (dy/len)*(dy/len)/(ry*ry)
+  );
+
+  return { 
+    x: cx + (dx/len) * t, 
+    y: cy + (dy/len) * t 
+  };
+}
 
 
 // ─── TOAST ────────────────────────────────────────────
 function toast(msg){
   const t=document.createElement('div'); t.textContent=msg;
-  Object.assign(t.style,{position:'fixed',bottom:'80px',left:'50%',transform:'translateX(-50%)',background:'#22222e',border:'1px solid #2e2e3e',color:'#e8e8f0',padding:'7px 16px',borderRadius:'10px',fontFamily:'Martian Mono,monospace',fontSize:'12px',zIndex:'9999',pointerEvents:'none',transition:'opacity .3s'});
+  Object.assign(t.style,{position:'fixed',bottom:'80px',left:'50%',transform:'translateX(-50%)',background:'var(--surface)',border:'1px solid var(--border)',color:'var(--text)',padding:'7px 16px',borderRadius:'10px',fontFamily:'Martian Mono,monospace',fontSize:'12px',zIndex:'9999',pointerEvents:'none',transition:'opacity .3s'});
   document.body.appendChild(t);
   setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(),300); },1800);
 }
